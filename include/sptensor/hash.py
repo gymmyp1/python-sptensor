@@ -56,55 +56,116 @@ class sptensor_hash_t:
 
 			# we have found the index in the table
 			if ptr.morton == morton:
-				return ptr.key
+				return ptr
 
 			# this is an empty position
 			if ptr.flag == 0:
 				ptr.morton = morton
 				ptr.key = i
-				#sptensor_index_cpy(t->modes, ptr->idx, idx)??
-				return i
+				ptr.idx = idx
+				return ptr
 
 			# do linear probing
 			t.num_collisions = t.num_collisions + 1
 			i = (i+1) % t.nbuckets
 
-		return -2
+		return 0
 
-	#Function to insert an element in the hash table.
+	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
 	def sptensor_hash_set(self, t, i, v):
 
 		# get the hash item
-		index = self.sptensor_hash_search(t, i)
+		item = self.sptensor_hash_search(t, i)
 
-		if index != -2:
+		if item != -1:
 			# either set or clear the item
 			if v != 0:
 				# mark as present
-				t.hashtable[index].flag = 1
+				item.flag = 1
 
 				# copy the value
-				t.hashtable[index].value = v
+				item.value = v
 
 				# Increase hashtable count
 				t.hash_curr_size = t.hash_curr_size + 1
 			else:
 				# check if item is present in the table
-				t.hashtable[index].flag = 1
+				item.flag = 1
 				# remove it from the table
 				print('removing value...')
 				#self.sptensor_hash_remove(t, item)
 
 				# Check if we need to rehash
-				#if((t->hash_curr_size/t->nbuckets) > 0.8):
-				#	sptensor_hash_rehash(t)
+				#if((t.hash_curr_size/t.nbuckets) > 0.8):
+				#	self.sptensor_hash_rehash(t)
 		return
 
-	def sptensor_hash_get(self, index):
-		print('to be implemented')
+	def sptensor_hash_get(self, t, i):
+		# get the hash item
+		item = self.sptensor_hash_search(t, i);
+
+		return item
 
 	def sptensor_hash_clear(self):
 		print('to be implemented')
+
+	def sptensor_hash_rehash(self, t):
+		# Double the number of buckets
+		new_hash_size = t.nbuckets * 2
+		new_hashtable = self.create_hashtable(new_hash_size,self.modes)
+
+		# save the old hash table
+		old_hash_size = t.nbuckets;
+		old_hashtable = t.hashtable;
+
+		# install the new one
+		t.nbuckets =  new_hash_size;
+		t.hashtable = new_hashtable;
+
+		# Rehash all existing items in t's hashtable to the new table
+		for i in range(old_hash_size):
+			item = old_hashtable[i]
+			#If occupied, we need to copy it to the other table!
+			if(item.flag == 1):
+				sptensor_hash_set(t, item.idx, item.value)
+
+		return
+
+	def sptensor_hash_remove(self, t, hash_item):
+
+		done = 0
+
+		# get the index */
+		#i = ptr - t->hashtable;
+		i = hash_item.key
+		j = i+1
+
+		# slide back as needed
+		while(done == 0):
+			# assume we are done
+			done=1
+
+			# mark as not present
+			t.hashtable[i].flag = 0
+
+			# go to the next probe slot
+			j = (i+1)%j
+
+			# check to see if we need to slide back
+			if(t.hashtable[j].flag == 0):
+				continue
+
+			# check to see if this one should be pushed back
+			if (t.hashtable[i].key == t.hashtable[j].key):
+				done = 0
+				t.hashtable[i].flag = t.hashtable[j].flag
+				t.hashtable[i].morton = t.hashtable[j].morton
+				t.hashtable[i].value = t.hashtable[j].value
+				t.hashtable[i].idx = t.hashtable[j].idx
+
+
+			# go on for the next one */
+			i=j
 
 	def sptensor_hash_nnz(self):
 		print('to be implemented')
