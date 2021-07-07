@@ -37,7 +37,7 @@ def main(argv):
     file = sys.argv[1]
     print('file = ', file)
 
-    t.sptensor_hash_read(file)
+    hash.sptensor_hash_read(file)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
