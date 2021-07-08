@@ -30,6 +30,21 @@ class sptensor_hash_t:
 
 		return table
 
+	def sptensor_hash_probe(self, t, item, i):
+		while 1:
+			item = t.hashtable[i]
+
+			# this is an empty position
+			if item.flag == 0:
+				item.key = i
+				break
+
+			# do linear probing
+			t.num_collisions = t.num_collisions + 1
+			i = (i+1) % t.nbuckets
+
+		return item
+
 	#Search the tensor for an index.
 	def sptensor_hash_search(self, t, idx):
 		index = 0
@@ -46,27 +61,16 @@ class sptensor_hash_t:
 		# count the accesses
 		t.num_accesses = t.num_accesses + 1
 
-		while 1:
+		# set pointer to that index
+		item = t.hashtable[i]
 
-			# set pointer to that index
-			ptr = t.hashtable[i]
+		# we have found the index in the table
+		if item.morton != morton:
+			item = self.sptensor_hash_probe(t, item, i);
+			item.morton = morton
+			item.idx = idx
 
-			# we have found the index in the table
-			if ptr.morton == morton:
-				return ptr
-
-			# this is an empty position
-			if ptr.flag == 0:
-				return -1
-
-			# do linear probing
-			t.num_collisions = t.num_collisions + 1
-			i = (i+1) % t.nbuckets
-
-			if i == index:
-				break
-
-		return -1
+		return item
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
 	def sptensor_hash_set(self, t, i, v):
@@ -74,7 +78,8 @@ class sptensor_hash_t:
 		# get the hash item
 		item = self.sptensor_hash_search(t, i)
 
-		if item != -1:
+		if item.value != 0:
+
 			# either set or clear the item
 			if v != 0:
 				# mark as present
@@ -131,15 +136,9 @@ class sptensor_hash_t:
 		return
 
 	def sptensor_hash_remove(self, t, idx):
-		# get the index
-		#i = ptr - t->hashtable;
-		item = self.sptensor_hash_search(t, idx)
-		item = sptensor_hash_item_t()
-
-		'''done = 0
+		done = 0
 
 		# get the index
-		#i = ptr - t->hashtable;
 		item = self.sptensor_hash_search(t, idx)
 		i = item.key
 		j = i+1
@@ -169,7 +168,7 @@ class sptensor_hash_t:
 				t.hashtable[i].idx = t.hashtable[j].idx
 
 			# go on for the next one */
-			i=j'''
+			i=j
 
 	def sptensor_hash_nnz(self):
 		print('to be implemented')
