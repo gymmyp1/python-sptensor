@@ -31,13 +31,11 @@ def main(argv):
     print("value = ", new.value)
     '''
 
-    t = hash.sptensor_hash_t(modes, 3)
-    print("created a tensor for i/o")
-
     file = sys.argv[1]
     print('file = ', file)
 
-    hash.sptensor_hash_read(file)
+    t = hash.sptensor_hash_read(file)
+    hash.sptensor_hash_write(sys.stdout, t)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

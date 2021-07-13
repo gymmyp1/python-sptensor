@@ -15,18 +15,18 @@ class sptensor_hash_t:
 	def __init__(self, modes, nmodes):
 		#sptensor fields
 		self.modes = modes
-		self.dim = nmodes
+		self.nmodes = nmodes
 
 		#Hash specific fields
 		self.nbuckets = NBUCKETS
-		self.hashtable = self.create_hashtable(self.nbuckets,self.modes)
+		self.hashtable = self.create_hashtable(self.nbuckets)
 		self.hash_curr_size = 0
 		self.num_collisions = 0
 		self.num_accesses = 0
 		self.probe_time = 0.0
 
-	def create_hashtable(self, buckets, nmodes):
-		table = [sptensor_hash_item_t()] * buckets * len(nmodes)
+	def create_hashtable(self, buckets):
+		table = [sptensor_hash_item_t()] * buckets
 
 		return table
 
@@ -116,7 +116,7 @@ class sptensor_hash_t:
 	def sptensor_hash_rehash(self, t):
 		# Double the number of buckets
 		new_hash_size = t.nbuckets * 2
-		new_hashtable = self.create_hashtable(new_hash_size,self.modes)
+		new_hashtable = self.create_hashtable(new_hash_size)
 
 		# save the old hash table
 		old_hash_size = t.nbuckets;
@@ -173,10 +173,6 @@ class sptensor_hash_t:
 	def sptensor_hash_nnz(self):
 		print('to be implemented')
 
-
-	def sptensor_hash_write(self, file):
-		print('to be implemented')
-
 	# Populate the mpz_t morton field with the morton encoding of the index.
 	def sptensor_py_morton(self, nmodes, index):
 		if len(nmodes) == 3:
@@ -189,14 +185,17 @@ def sptensor_hash_read(file):
 		# Get the modes and dimensions from the header
 		first_line = reader.readline()
 		idx = first_line.split()
-		nmodes = idx.pop(0)
+		nmodes = int(idx.pop(0))
+
 		idx = [int(i) for i in idx]
-		print('nmodes =',nmodes)
+		#print('nmodes =',nmodes)
 		for i in range(len(idx)):
-			print(idx[i])
+			print('idx = ',idx[i])
 
 		# Create the tensor
 		tns = sptensor_hash_t(idx, nmodes)
+		print('tns.modes = ',tns.modes)
+		print('tns.nmodes =',tns.nmodes)
 
 		for row in reader:
 			row = row.split()
@@ -204,8 +203,18 @@ def sptensor_hash_read(file):
 			val = row.pop()
 			# The rest of the line is the indexes
 			idx = [int(i) for i in row]
-			print('idx: ',idx)
-			print('val: ',val)
+			#print('idx: ',idx)
+			#print('val: ',val)
 			tns.sptensor_hash_set(tns, idx, val);
 
 	reader.close()
+	return tns
+
+def sptensor_hash_write(file, tns):
+
+	# print the preamble
+	print(tns.nmodes, end=' ')
+	for i in range(tns.nmodes):
+		print(tns.modes[i], end=' ')
+
+	print('\n')
