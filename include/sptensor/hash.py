@@ -25,16 +25,23 @@ class sptensor_hash_t:
 		self.num_accesses = 0
 		self.probe_time = 0.0
 
-	def create_hashtable(self, buckets):
-		table = [sptensor_hash_item_t()] * buckets
+	def create_hashtable(self, nbuckets):
+		table = []
+
+		for i in range(nbuckets):
+			table.append(sptensor_hash_item_t())
 
 		return table
 
-	def sptensor_hash_probe(self, t, item, i):
+	def sptensor_hash_probe(self, t, i):
+
+		i = i+1
+
 		while 1:
+			# set item to that index */
 			item = t.hashtable[i]
 
-			# this is an empty position
+			# this is an empty position */
 			if item.flag == 0:
 				item.key = i
 				break
@@ -47,28 +54,27 @@ class sptensor_hash_t:
 
 	#Search the tensor for an index.
 	def sptensor_hash_search(self, t, idx):
-		index = 0
-		i = 0
-		morton = 0
 
 		#Compress idx using the morton encoding
 		morton = self.sptensor_py_morton(t.modes, idx)
 
 		#mod by number of buckets in hash and get the index
-		index = morton % t.nbuckets
-		i = index
+		i = morton % t.nbuckets
 
 		# count the accesses
 		t.num_accesses = t.num_accesses + 1
 
-		# set pointer to that index
+		# set item to that index
 		item = t.hashtable[i]
 
-		# we have found the index in the table
+		# If we do not have the right index, linearly probe
 		if item.morton != morton:
-			item = self.sptensor_hash_probe(t, item, i);
-			item.morton = morton
-			item.idx = idx
+			item = self.sptensor_hash_probe(t,i) #probe sets the key
+		else:
+			item.key = i
+
+		item.morton = morton
+		item.idx = idx
 
 		return item
 
@@ -77,29 +83,31 @@ class sptensor_hash_t:
 
 		# get the hash item
 		item = self.sptensor_hash_search(t, i)
+		#print('item idx=',item.idx)
+		#print('item key=',item.key)
+		#print('item key=',item.key)
 
-		if item.value != 0:
+		# either set or clear the item
+		if v != 0:
+			# mark as present
+			item.flag = 1
 
-			# either set or clear the item
-			if v != 0:
-				# mark as present
-				item.flag = 1
+			# copy the value
+			item.value = v
 
-				# copy the value
-				item.value = v
-
-				# Increase hashtable count
-				t.hash_curr_size = t.hash_curr_size + 1
-			else:
-				# check if item is present in the table
-				#if (item.flag == 1):??
-				# remove it from the table
-				print('removing value...')
-				self.sptensor_hash_remove(t, item)
+			# Increase hashtable count
+			t.hash_curr_size = t.hash_curr_size + 1
+		else:
+			# check if item is present in the table
+			#if (item.flag == 1):??
+			# remove it from the table
+			print('removing value...')
+			self.sptensor_hash_remove(t, item)
 
 		# Check if we need to rehash
 		if((t.hash_curr_size/t.nbuckets) > 0.8):
 			self.sptensor_hash_rehash(t)
+			
 		return
 
 	def sptensor_hash_get(self, t, i):
@@ -132,7 +140,6 @@ class sptensor_hash_t:
 			#If occupied, we need to copy it to the other table!
 			if(item.flag == 1):
 				sptensor_hash_set(t, item.idx, item.value)
-
 		return
 
 	def sptensor_hash_remove(self, t, idx):
@@ -188,24 +195,19 @@ def sptensor_hash_read(file):
 		nmodes = int(idx.pop(0))
 
 		idx = [int(i) for i in idx]
-		#print('nmodes =',nmodes)
-		for i in range(len(idx)):
-			print('idx = ',idx[i])
 
 		# Create the tensor
 		tns = sptensor_hash_t(idx, nmodes)
-		print('tns.modes = ',tns.modes)
-		print('tns.nmodes =',tns.nmodes)
 
 		for row in reader:
 			row = row.split()
 			# Get the value
-			val = row.pop()
+			val = float(row.pop())
 			# The rest of the line is the indexes
 			idx = [int(i) for i in row]
-			#print('idx: ',idx)
-			#print('val: ',val)
-			tns.sptensor_hash_set(tns, idx, val);
+			print('idx: ',idx)
+			print('val: ',val)
+			#tns.sptensor_hash_set(tns, idx, val);
 
 	reader.close()
 	return tns
@@ -218,3 +220,16 @@ def sptensor_hash_write(file, tns):
 		print(tns.modes[i], end=' ')
 
 	print('\n')
+
+	print('dklsfjds;l')
+
+	print(tns.nbuckets)
+	for i in range(tns.nbuckets):
+		item = tns.hashtable[i]
+		if item.flag == 1:
+			# print the indexes
+			for j in range(tns.nmodes):
+				print(item.idx, end='')
+
+			#print the value
+			print(item.value)
