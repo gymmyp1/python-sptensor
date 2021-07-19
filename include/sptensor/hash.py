@@ -138,7 +138,7 @@ class sptensor_hash_t:
 			item = old_hashtable[i]
 			#If occupied, we need to copy it to the other table!
 			if(item.flag == 1):
-				sptensor_hash_set(t, item.idx, item.value)
+				self.sptensor_hash_set(t, item.idx, item.value)
 		return
 
 	def sptensor_hash_remove(self, t, idx):
@@ -183,6 +183,76 @@ class sptensor_hash_t:
 	def sptensor_py_morton(self, nmodes, index):
 		return morton(*index)
 
+
+	def get_slice(self, key):
+		# make it a list!
+		key = list(key)
+
+		# convert all keys into ranges and extract modes
+		resultModes = []
+		for i in range(len(key)):
+			if type(key[i]) == slice:
+				key[i] = range(*key[i].indices(self.modes[i]))
+			else:
+				key[i] = range(key[i], key[i]+1)
+			resultModes.append(len(key[i]))
+	
+		# create the result tensor
+		result = sptensor_hash_t(resultModes, len(resultModes))
+
+		# copy the relevant non-zeroes
+		for item in self.hashtable:
+			#skip the not-present
+			if item.flag != 1:
+				continue
+
+			# copy the things in our range
+			copy = True
+			for i in range(len(item.idx)):
+				if item.idx[i] not in key[i]:
+					copy = False
+					break
+			if copy:
+				result.sptensor_hash_set(self, item.idx, item.value)
+		return result
+
+	def __getitem__(self, key):
+		# make the key iteratble (if needed)
+		if not hasattr(key, '__iter__'):
+			key = (key,)
+
+		# validate the index
+		if len(key) != self.nmodes:
+			raise IndexError("Mode Mismatch")
+		simpleIndex = True	
+		for i in key:
+			if type(i)==slice:
+				simpleIndex = False
+			elif type(i) != int:
+				raise IndexError("Mode index must be either a slice or an integer.")
+		
+		# handle simple index
+		if simpleIndex:
+			return self.sptensor_hash_get(self, key)
+	
+		# do the extra work
+		return self.get_slice(key)
+
+
+	def __setitem__(self, key, value):
+		# make the key iteratble (if needed)
+		if not hasattr(key, '__iter__'):
+			key = (key,)
+
+		# validate the index
+		if len(key) != self.nmodes:
+			raise IndexError("Mode Mismatch")
+		for i in key:
+			if type(i) != int:
+				raise IndexError("Mode index must be an integer.")
+
+		self.sptensor_hash_set(self, key, value)
+
 def sptensor_hash_read(file):
 	with open(file, 'r') as reader:
 		# Get the modes and dimensions from the header
@@ -226,3 +296,6 @@ def sptensor_hash_write(file, tns):
 
 			#print the value
 			print(item.value)
+
+
+
