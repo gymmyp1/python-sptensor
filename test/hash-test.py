@@ -46,7 +46,7 @@ def main(argv):
     print('file = ', file)
 
     t = hash.sptensor_hash_read(file)
-    #hash.sptensor_hash_write(sys.stdout, t)
+    hash.sptensor_hash_write(sys.stdout, t)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

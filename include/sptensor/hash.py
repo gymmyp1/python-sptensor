@@ -56,7 +56,7 @@ class sptensor_hash_t:
 	def sptensor_hash_search(self, t, idx):
 
 		#Compress idx using the morton encoding
-		morton = self.sptensor_py_morton(t.modes, idx)
+		morton = self.sptensor_py_morton(t.nmodes, idx)
 
 		#mod by number of buckets in hash and get the index
 		i = morton % t.nbuckets
@@ -101,13 +101,13 @@ class sptensor_hash_t:
 			# check if item is present in the table
 			#if (item.flag == 1):??
 			# remove it from the table
-			print('removing value...')
-			self.sptensor_hash_remove(t, item)
+			#print('removing value...')
+			self.sptensor_hash_remove(t, item.idx)
 
 		# Check if we need to rehash
 		if((t.hash_curr_size/t.nbuckets) > 0.8):
 			self.sptensor_hash_rehash(t)
-			
+
 		return
 
 	def sptensor_hash_get(self, t, i):
@@ -167,7 +167,7 @@ class sptensor_hash_t:
 
 			# check to see if this one should be pushed back
 			if (t.hashtable[i].key == t.hashtable[j].key):
-				print('key[i] == key[j]')
+				#print('key[i] == key[j]')
 				done = 0
 				t.hashtable[i].flag = t.hashtable[j].flag
 				t.hashtable[i].morton = t.hashtable[j].morton
@@ -182,7 +182,7 @@ class sptensor_hash_t:
 
 	# Populate the mpz_t morton field with the morton encoding of the index.
 	def sptensor_py_morton(self, nmodes, index):
-		if len(nmodes) == 3:
+		if nmodes == 3:
 			mortoncode = pm.interleave3(index[0], index[1], index[2])
 			#print(mortoncode)
 			return mortoncode
@@ -205,9 +205,9 @@ def sptensor_hash_read(file):
 			val = float(row.pop())
 			# The rest of the line is the indexes
 			idx = [int(i) for i in row]
-			print('idx: ',idx)
-			print('val: ',val)
-			#tns.sptensor_hash_set(tns, idx, val);
+			#print('idx: ',idx)
+			#print('val: ',val)
+			tns.sptensor_hash_set(tns, idx, val);
 
 	reader.close()
 	return tns
@@ -219,17 +219,14 @@ def sptensor_hash_write(file, tns):
 	for i in range(tns.nmodes):
 		print(tns.modes[i], end=' ')
 
-	print('\n')
+	print('\n',end='')
 
-	print('dklsfjds;l')
-
-	print(tns.nbuckets)
 	for i in range(tns.nbuckets):
 		item = tns.hashtable[i]
 		if item.flag == 1:
 			# print the indexes
 			for j in range(tns.nmodes):
-				print(item.idx, end='')
+				print(item.idx[j], end=' ')
 
 			#print the value
 			print(item.value)
