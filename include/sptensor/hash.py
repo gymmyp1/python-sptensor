@@ -1,5 +1,4 @@
-
-import pymorton as pm
+from morton import morton
 
 NBUCKETS = 128
 
@@ -182,10 +181,7 @@ class sptensor_hash_t:
 
 	# Populate the mpz_t morton field with the morton encoding of the index.
 	def sptensor_py_morton(self, nmodes, index):
-		if nmodes == 3:
-			mortoncode = pm.interleave3(index[0], index[1], index[2])
-			#print(mortoncode)
-			return mortoncode
+		return morton(*index)
 
 def sptensor_hash_read(file):
 	with open(file, 'r') as reader:
