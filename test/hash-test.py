@@ -13,18 +13,18 @@ def main():
 
     v = [99.0, 44.0, 100.0, 1.0]
 
-    tns = hash.sptensor_hash_t(modes, 3)
+    tns = hash.hash_t(modes)
 
-    tns.sptensor_hash_set(tns, [4,4,4], 5.0);
+    tns.set(tns, [4,4,4], 5.0);
     print("set value")
 
-    value = tns.sptensor_hash_get(tns, [4,4,4]);
+    value = tns.get(tns, [4,4,4]);
     print("value = ", value)
 
-    tns.sptensor_hash_remove(tns, idx[0]);
+    tns.remove(tns, idx[0]);
     print("removing...")
 
-    new = tns.sptensor_hash_get(tns, idx[0]);
+    new = tns.get(tns, idx[0]);
     print("value = ", new)
 
     '''for i in range(tns.nbuckets):

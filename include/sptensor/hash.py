@@ -1,8 +1,11 @@
+from tqdm import tqdm
+import time
+
 from morton import morton
 
 NBUCKETS = 128
 
-class sptensor_hash_item_t:
+class hash_item_t:
 	def __init__(self):
 		self.morton = 0
 		self.key = 0
@@ -10,11 +13,11 @@ class sptensor_hash_item_t:
 		self.idx = []
 		self.flag = 0
 
-class sptensor_hash_t:
-	def __init__(self, modes, nmodes):
+class hash_t:
+	def __init__(self, modes):
 		#sptensor fields
 		self.modes = modes
-		self.nmodes = nmodes
+		self.nmodes = len(modes)
 
 		#Hash specific fields
 		self.nbuckets = NBUCKETS
@@ -28,34 +31,15 @@ class sptensor_hash_t:
 		table = []
 
 		for i in range(nbuckets):
-			table.append(sptensor_hash_item_t())
+			table.append(hash_item_t())
 
 		return table
 
-	def sptensor_hash_probe(self, t, i):
-
-		i = i+1
-
-		while 1:
-			# set item to that index */
-			item = t.hashtable[i]
-
-			# this is an empty position */
-			if item.flag == 0:
-				item.key = i
-				break
-
-			# do linear probing
-			t.num_collisions = t.num_collisions + 1
-			i = (i+1) % t.nbuckets
-
-		return item
-
 	#Search the tensor for an index.
-	def sptensor_hash_search(self, t, idx):
+	def search(self, t, idx):
 
 		#Compress idx using the morton encoding
-		morton = self.sptensor_py_morton(t.nmodes, idx)
+		morton = self.morton(idx)
 
 		#mod by number of buckets in hash and get the index
 		i = morton % t.nbuckets
@@ -63,28 +47,33 @@ class sptensor_hash_t:
 		# count the accesses
 		t.num_accesses = t.num_accesses + 1
 
-		# set item to that index
-		item = t.hashtable[i]
+		while(1):
+			# set item to that index
+			item = t.hashtable[i]
 
-		# If we do not have the right index, linearly probe
-		if item.morton != morton:
-			item = self.sptensor_hash_probe(t,i) #probe sets the key
-		else:
-			item.key = i
+			# If we do not have the right index, linearly probe
+			if item.morton == morton:
+				#print('item.morton != morton')
+				#item = self.sptensor_hash_probe(t,i) #probe sets the key
+				break;
 
-		item.morton = morton
-		item.idx = idx
+			if item.flag == 0:
+				item.key
+				item.morton = morton
+				item.idx = idx
+				break;
+
+			# do linear probing
+			t.num_collisions = t.num_collisions + 1
+			i = (i+1) % t.nbuckets
 
 		return item
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
-	def sptensor_hash_set(self, t, i, v):
+	def set(self, t, i, v):
 
 		# get the hash item
-		item = self.sptensor_hash_search(t, i)
-		#print('item idx=',item.idx)
-		#print('item key=',item.key)
-		#print('item key=',item.key)
+		item = self.search(t, i)
 
 		# either set or clear the item
 		if v != 0:
@@ -101,26 +90,30 @@ class sptensor_hash_t:
 			#if (item.flag == 1):??
 			# remove it from the table
 			#print('removing value...')
-			self.sptensor_hash_remove(t, item.idx)
+			self.remove(t, item.idx)
 
 		# Check if we need to rehash
 		if((t.hash_curr_size/t.nbuckets) > 0.8):
-			self.sptensor_hash_rehash(t)
+			self.rehash(t)
 
 		return
 
-	def sptensor_hash_get(self, t, i):
+	def get(self, t, i):
 		# get the hash item
-		item = self.sptensor_hash_search(t, i);
+		item = self.search(t, i);
+		#print('item.idx=', item.idx)
+		#print('item.value= ',item.value)
+		#print('item.key= ',item.key)
+		return item.value
 
-		return item
-
-	def sptensor_hash_clear(self, t):
+	def clear(self, t):
 		for i in range(t.nbuckets):
 			t.hashtable[i].flag = 0
 		return
 
-	def sptensor_hash_rehash(self, t):
+	def rehash(self, t):
+		#print('rehashing...')
+
 		# Double the number of buckets
 		new_hash_size = t.nbuckets * 2
 		new_hashtable = self.create_hashtable(new_hash_size)
@@ -138,14 +131,14 @@ class sptensor_hash_t:
 			item = old_hashtable[i]
 			#If occupied, we need to copy it to the other table!
 			if(item.flag == 1):
-				sptensor_hash_set(t, item.idx, item.value)
+				self.set(t, item.idx, item.value)
 		return
 
-	def sptensor_hash_remove(self, t, idx):
+	def remove(self, t, idx):
 		done = 0
 
 		# get the index
-		item = self.sptensor_hash_search(t, idx)
+		item = self.search(t, idx)
 		i = item.key
 		j = i+1
 
@@ -176,39 +169,40 @@ class sptensor_hash_t:
 			# go on for the next one */
 			i=j
 
-	def sptensor_hash_nnz(self):
+	def nnz(self):
 		print('to be implemented')
 
 	# Populate the mpz_t morton field with the morton encoding of the index.
-	def sptensor_py_morton(self, nmodes, index):
+	def morton(self, index):
 		return morton(*index)
 
-def sptensor_hash_read(file):
-	with open(file, 'r') as reader:
-		# Get the modes and dimensions from the header
-		first_line = reader.readline()
-		idx = first_line.split()
-		nmodes = int(idx.pop(0))
+def read(file):
+	for i in tqdm(range(100),desc='Reading file'):
+		with open(file, 'r') as reader:
+			# Get the modes and dimensions from the header
+			first_line = reader.readline()
+			idx = first_line.split()
+			nmodes = int(idx.pop(0))
 
-		idx = [int(i) for i in idx]
+			idx = [int(i) for i in idx]
 
-		# Create the tensor
-		tns = sptensor_hash_t(idx, nmodes)
+			# Create the tensor
+			tns = hash_t(idx)
 
-		for row in reader:
-			row = row.split()
-			# Get the value
-			val = float(row.pop())
-			# The rest of the line is the indexes
-			idx = [int(i) for i in row]
-			#print('idx: ',idx)
-			#print('val: ',val)
-			tns.sptensor_hash_set(tns, idx, val);
+			for row in reader:
+				row = row.split()
+				# Get the value
+				val = float(row.pop())
+				# The rest of the line is the indexes
+				idx = [int(i) for i in row]
+				#print('idx: ',idx)
+				#print('val: ',val)
+				tns.set(tns, idx, val);
 
-	reader.close()
+		reader.close()
 	return tns
 
-def sptensor_hash_write(file, tns):
+def write(file, tns):
 
 	# print the preamble
 	print(tns.nmodes, end=' ')
