@@ -36,20 +36,20 @@ class hash_t:
 		return table
 
 	#Search the tensor for an index.
-	def search(self, t, idx):
+	def search(self, idx):
 
 		#Compress idx using the morton encoding
 		morton = self.morton(idx)
 
 		#mod by number of buckets in hash and get the index
-		i = morton % t.nbuckets
+		i = morton % self.nbuckets
 
 		# count the accesses
-		t.num_accesses = t.num_accesses + 1
+		self.num_accesses = self.num_accesses + 1
 
 		while(1):
 			# set item to that index
-			item = t.hashtable[i]
+			item = self.hashtable[i]
 
 			# If we do not have the right index, linearly probe
 			if item.morton == morton:
@@ -64,16 +64,16 @@ class hash_t:
 				break;
 
 			# do linear probing
-			t.num_collisions = t.num_collisions + 1
-			i = (i+1) % t.nbuckets
+			self.num_collisions = self.num_collisions + 1
+			i = (i+1) % self.nbuckets
 
 		return item
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
-	def set(self, t, i, v):
+	def set(self, i, v):
 
 		# get the hash item
-		item = self.search(t, i)
+		item = self.search(i)
 
 		# either set or clear the item
 		if v != 0:
@@ -84,61 +84,61 @@ class hash_t:
 			item.value = v
 
 			# Increase hashtable count
-			t.hash_curr_size = t.hash_curr_size + 1
+			self.hash_curr_size = self.hash_curr_size + 1
 		else:
 			# check if item is present in the table
 			#if (item.flag == 1):??
 			# remove it from the table
 			#print('removing value...')
-			self.remove(t, item.idx)
+			self.remove(item.idx)
 
 		# Check if we need to rehash
-		if((t.hash_curr_size/t.nbuckets) > 0.8):
-			self.rehash(t)
+		if((self.hash_curr_size/self.nbuckets) > 0.8):
+			self.rehash()
 
 		return
 
-	def get(self, t, i):
+	def get(self, i):
 		# get the hash item
-		item = self.search(t, i);
+		item = self.search(i);
 		#print('item.idx=', item.idx)
 		#print('item.value= ',item.value)
 		#print('item.key= ',item.key)
 		return item.value
 
-	def clear(self, t):
-		for i in range(t.nbuckets):
-			t.hashtable[i].flag = 0
+	def clear(self, ):
+		for i in range(self.nbuckets):
+			self.hashtable[i].flag = 0
 		return
 
-	def rehash(self, t):
+	def rehash(self):
 		#print('rehashing...')
 
 		# Double the number of buckets
-		new_hash_size = t.nbuckets * 2
+		new_hash_size = self.nbuckets * 2
 		new_hashtable = self.create_hashtable(new_hash_size)
 
 		# save the old hash table
-		old_hash_size = t.nbuckets;
-		old_hashtable = t.hashtable;
+		old_hash_size = self.nbuckets;
+		old_hashtable = self.hashtable;
 
 		# install the new one
-		t.nbuckets =  new_hash_size;
-		t.hashtable = new_hashtable;
+		self.nbuckets =  new_hash_size;
+		self.hashtable = new_hashtable;
 
 		# Rehash all existing items in t's hashtable to the new table
 		for i in range(old_hash_size):
 			item = old_hashtable[i]
 			#If occupied, we need to copy it to the other table!
 			if(item.flag == 1):
-				self.set(t, item.idx, item.value)
+				self.set(item.idx, item.value)
 		return
 
-	def remove(self, t, idx):
+	def remove(self, idx):
 		done = 0
 
 		# get the index
-		item = self.search(t, idx)
+		item = self.search(idx)
 		i = item.key
 		j = i+1
 
@@ -148,23 +148,23 @@ class hash_t:
 			done=1
 
 			# mark as not present
-			t.hashtable[i].flag = 0
+			self.hashtable[i].flag = 0
 
 			# go to the next probe slot
 			j = (i+1)%j
 
 			# check to see if we need to slide back
-			if(t.hashtable[j].flag == 0):
+			if(self.hashtable[j].flag == 0):
 				continue
 
 			# check to see if this one should be pushed back
-			if (t.hashtable[i].key == t.hashtable[j].key):
+			if (self.hashtable[i].key == self.hashtable[j].key):
 				#print('key[i] == key[j]')
 				done = 0
-				t.hashtable[i].flag = t.hashtable[j].flag
-				t.hashtable[i].morton = t.hashtable[j].morton
-				t.hashtable[i].value = t.hashtable[j].value
-				t.hashtable[i].idx = t.hashtable[j].idx
+				self.hashtable[i].flag = self.hashtable[j].flag
+				self.hashtable[i].morton = self.hashtable[j].morton
+				self.hashtable[i].value = self.hashtable[j].value
+				self.hashtable[i].idx = self.hashtable[j].idx
 
 			# go on for the next one */
 			i=j
@@ -191,7 +191,7 @@ class hash_t:
 			resultModes.append(len(key[i]))
 
 		# create the result tensor
-		result = sptensor_hash_t(resultModes, len(resultModes))
+		result = hash_t(resultModes)
 
 		# copy the relevant non-zeroes
 		for item in self.hashtable:
@@ -206,7 +206,7 @@ class hash_t:
 					copy = False
 					break
 			if copy:
-				result.sptensor_hash_set(self, item.idx, item.value)
+				result.set(item.idx, item.value)
 		return result
 
 	def __getitem__(self, key):
@@ -226,7 +226,7 @@ class hash_t:
 
 		# handle simple index
 		if simpleIndex:
-			return self.sptensor_hash_get(self, key)
+			return self.get(key)
 
 		# do the extra work
 		return self.get_slice(key)
@@ -244,7 +244,7 @@ class hash_t:
 			if type(i) != int:
 				raise IndexError("Mode index must be an integer.")
 
-		self.sptensor_hash_set(self, key, value)
+		self.set(key, value)
 
 def read(file):
 	for i in tqdm(range(100),desc='Reading file'):
@@ -267,7 +267,7 @@ def read(file):
 				idx = [int(i) for i in row]
 				#print('idx: ',idx)
 				#print('val: ',val)
-				tns.set(tns, idx, val);
+				tns.set(idx, val)
 
 		reader.close()
 	return tns
