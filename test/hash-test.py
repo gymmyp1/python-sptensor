@@ -15,16 +15,16 @@ def main():
 
     tns = hash.hash_t(modes)
 
-    tns.set(tns, [4,4,4], 5.0);
+    tns.set([4,4,4], 5.0);
     print("set value")
 
-    value = tns.get(tns, [4,4,4]);
+    value = tns.get([4,4,4]);
     print("value = ", value)
 
-    tns.remove(tns, idx[0]);
+    tns.remove(idx[0]);
     print("removing...")
 
-    new = tns.get(tns, idx[0]);
+    new = tns.get(idx[0]);
     print("value = ", new)
 
     '''for i in range(tns.nbuckets):
