@@ -55,13 +55,13 @@ class hash_t:
 			if item.morton == morton:
 				#print('item.morton != morton')
 				#item = self.sptensor_hash_probe(t,i) #probe sets the key
-				break;
+				break
 
 			if item.flag == 0:
 				item.key
 				item.morton = morton
 				item.idx = idx
-				break;
+				break
 
 			# do linear probing
 			self.num_collisions = self.num_collisions + 1
@@ -100,7 +100,7 @@ class hash_t:
 
 	def get(self, i):
 		# get the hash item
-		item = self.search(i);
+		item = self.search(i)
 		#print('item.idx=', item.idx)
 		#print('item.value= ',item.value)
 		#print('item.key= ',item.key)
@@ -119,12 +119,12 @@ class hash_t:
 		new_hashtable = self.create_hashtable(new_hash_size)
 
 		# save the old hash table
-		old_hash_size = self.nbuckets;
-		old_hashtable = self.hashtable;
+		old_hash_size = self.nbuckets
+		old_hashtable = self.hashtable
 
 		# install the new one
-		self.nbuckets =  new_hash_size;
-		self.hashtable = new_hashtable;
+		self.nbuckets =  new_hash_size
+		self.hashtable = new_hashtable
 
 		# Rehash all existing items in t's hashtable to the new table
 		for i in range(old_hash_size):
