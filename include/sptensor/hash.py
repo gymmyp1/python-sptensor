@@ -5,13 +5,14 @@ from morton import morton
 
 NBUCKETS = 128
 
-class hash_item_t:
-	def __init__(self):
-		self.morton = None
-		self.key = 0
-		self.value = 0.0
-		self.idx = []
-		self.flag = 0
+class HashTable:
+	def __init__(self, nbuckets):
+		self.nbuckets = nbuckets
+		self.morton = [None] * nbuckets
+		self.key = [0] * nbuckets
+		self.value = [0.0] * nbuckets
+		self.idx = [None] * nbuckets
+		self.flag = [0] * nbuckets
 
 class hash_t:
 	def __init__(self, modes):
@@ -21,19 +22,12 @@ class hash_t:
 
 		#Hash specific fields
 		self.nbuckets = NBUCKETS
-		self.hashtable = self.create_hashtable(self.nbuckets)
+		self.hashtable = HashTable(self.nbuckets)
 		self.hash_curr_size = 0
 		self.num_collisions = 0
 		self.num_accesses = 0
 		self.probe_time = 0.0
 
-	def create_hashtable(self, nbuckets):
-		table = []
-
-		for i in range(nbuckets):
-			table.append(hash_item_t())
-
-		return table
 
 	#Search the tensor for an index.
 	def search(self, idx):
@@ -48,40 +42,37 @@ class hash_t:
 		self.num_accesses = self.num_accesses + 1
 
 		while(1):
-			# set item to that index
-			item = self.hashtable[i]
-
 			# If we do not have the right index, linearly probe
-			if item.morton == morton:
+			if self.hashtable.morton[i] == morton:
 				#print('item.morton != morton')
 				#item = self.sptensor_hash_probe(t,i) #probe sets the key
 				break
 
-			if item.flag == 0:
-				item.key
-				item.morton = morton
-				item.idx = idx
+			if self.hashtable.flag[i] == 0:
+				self.hashtable.key[i]
+				self.hashtable.morton[i] = morton
+				self.hashtable.idx[i] = idx
 				break
 
 			# do linear probing
 			self.num_collisions = self.num_collisions + 1
 			i = (i+1) % self.nbuckets
 
-		return item
+		return i
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
 	def set(self, i, v):
 
 		# get the hash item
-		item = self.search(i)
+		index = self.search(i)
 
 		# either set or clear the item
 		if v != 0:
 			# mark as present
-			item.flag = 1
+			self.hashtable.flag[index] = 1
 
 			# copy the value
-			item.value = v
+			self.hashtable.value[index] = v
 
 			# Increase hashtable count
 			self.hash_curr_size = self.hash_curr_size + 1
@@ -90,7 +81,7 @@ class hash_t:
 			#if (item.flag == 1):??
 			# remove it from the table
 			#print('removing value...')
-			self.remove(item.idx)
+			self.remove(i)
 
 		# Check if we need to rehash
 		if((self.hash_curr_size/self.nbuckets) > 0.8):
@@ -100,23 +91,24 @@ class hash_t:
 
 	def get(self, i):
 		# get the hash item
-		item = self.search(i)
+		i = self.search(i)
 		#print('item.idx=', item.idx)
 		#print('item.value= ',item.value)
 		#print('item.key= ',item.key)
-		return item.value
+		return self.hashtable.value[i]
 
 	def clear(self, ):
 		for i in range(self.nbuckets):
-			self.hashtable[i].flag = 0
+			self.hashtable.flag[i] = 0
 		return
+
 
 	def rehash(self):
 		#print('rehashing...')
 
 		# Double the number of buckets
 		new_hash_size = self.nbuckets * 2
-		new_hashtable = self.create_hashtable(new_hash_size)
+		new_hashtable = HashTable(new_hash_size)
 
 		# save the old hash table
 		old_hash_size = self.nbuckets
@@ -128,18 +120,17 @@ class hash_t:
 
 		# Rehash all existing items in t's hashtable to the new table
 		for i in range(old_hash_size):
-			item = old_hashtable[i]
 			#If occupied, we need to copy it to the other table!
-			if(item.flag == 1):
-				self.set(item.idx, item.value)
-		return
+			if(self.hashtable.flag[i] == 1):
+				self.set(self.hashtable.idx[i], self.hashtable.value[i])
+
 
 	def remove(self, idx):
 		done = 0
 
 		# get the index
-		item = self.search(idx)
-		i = item.key
+		index = self.search(idx)
+		i = self.hashtable.key[index]
 		j = i+1
 
 		# slide back as needed
@@ -148,23 +139,23 @@ class hash_t:
 			done=1
 
 			# mark as not present
-			self.hashtable[i].flag = 0
+			self.hashtable.flag[i] = 0
 
 			# go to the next probe slot
 			j = (i+1)%j
 
 			# check to see if we need to slide back
-			if(self.hashtable[j].flag == 0):
+			if(self.hashtable.flag[j] == 0):
 				continue
 
 			# check to see if this one should be pushed back
-			if (self.hashtable[i].key == self.hashtable[j].key):
+			if (self.hashtable.key[j] == self.hashtable.key[j]):
 				#print('key[i] == key[j]')
 				done = 0
-				self.hashtable[i].flag = self.hashtable[j].flag
-				self.hashtable[i].morton = self.hashtable[j].morton
-				self.hashtable[i].value = self.hashtable[j].value
-				self.hashtable[i].idx = self.hashtable[j].idx
+				self.hashtable.flag[i] = self.hashtable.flag[j]
+				self.hashtable.morton[i] = self.hashtable.morton[j]
+				self.hashtable.value[i] = self.hashtable.value[j]
+				self.hashtable.idx[i] = self.hashtable.idx[j]
 
 			# go on for the next one */
 			i=j
@@ -194,20 +185,21 @@ class hash_t:
 		result = hash_t(resultModes)
 
 		# copy the relevant non-zeroes
-		for item in self.hashtable:
+		for index in range(self.hashtable.nbuckets):
 			#skip the not-present
-			if item.flag != 1:
+			if self.hashtable.flag[index] != 1:
 				continue
 
 			# copy the things in our range
 			copy = True
-			for i in range(len(item.idx)):
-				if item.idx[i] not in key[i]:
+			for i in range(self.hashtable.idx[index]):
+				if self.hashtable.idx[i] not in key[i]:
 					copy = False
 					break
 			if copy:
-				result.set(item.idx, item.value)
+				result.set(self.hashtable.idx[index], self.hashtable.value[index])
 		return result
+
 
 	def __getitem__(self, key):
 		# make the key iteratble (if needed)
@@ -282,11 +274,10 @@ def write(file, tns):
 	print('\n',end='')
 
 	for i in range(tns.nbuckets):
-		item = tns.hashtable[i]
-		if item.flag == 1:
+		if tns.hashtable.flag[i] == 1:
 			# print the indexes
 			for j in range(tns.nmodes):
-				print(item.idx[j], end=' ')
+				print(tns.hashtable.idx[i][j], end=' ')
 
 			#print the value
-			print(item.value)
+			print(tns.hashtable.value[i])
