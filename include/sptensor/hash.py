@@ -7,7 +7,7 @@ NBUCKETS = 128
 
 class hash_item_t:
 	def __init__(self):
-		self.morton = 0
+		self.morton = None
 		self.key = 0
 		self.value = 0.0
 		self.idx = []
