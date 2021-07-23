@@ -24,6 +24,7 @@ class hash_t:
 		self.hash_curr_size = 0
 		self.num_collisions = 0
 		self.num_accesses = 0
+		self.num_probe = 0
 		self.probe_time = 0.0
 
 
@@ -58,11 +59,15 @@ class hash_t:
 		# count the accesses
 		self.num_accesses = self.num_accesses + 1
 		i = key
+
+		# check for collision
+		if self.hashtable.flag[i] != 0 and self.hashtable.morton[i] != morton:
+			self.num_collisions = self.num_collisions + 1
 		while True:
 			if self.hashtable.flag[i] == 0 or self.hashtable.morton[i] == morton:
 				return i
 			i = (i+1) % self.nbuckets
-			self.num_collisions = self.num_collisions + 1
+			self.num_probe = self.num_probe + 1
 
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
@@ -91,7 +96,8 @@ class hash_t:
 			# check if item is present in the table
 			if self.hashtable.flag[index] == 1:
 				# remove it from the table
-				self.remove(i)
+				#self.remove(i)
+				pass
 
 		# Check if we need to rehash
 		if((self.hash_curr_size/self.nbuckets) > 0.8):
@@ -266,6 +272,8 @@ def read(file):
 		for row in reader:
 			#print(count)
 			count=count+1
+			if count % 1000 == 0:
+				print("Count: ", count, "Collisions:", tns.num_collisions, "Probes:", tns.num_probe)
 			row = row.split()
 			# Get the value
 			val = float(row.pop())
