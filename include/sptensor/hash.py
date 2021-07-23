@@ -27,48 +27,63 @@ class hash_t:
 		self.probe_time = 0.0
 
 
-	#Search the tensor for an index.
-	def search(self, idx):
+	def hash(self, idx):
+		"""
+		Hash the index and return the morton code and key.
 
-		#Compress idx using the morton encoding
+		Parameters:
+			idx - The index to hash
+		
+		Returns:
+			morton, key
+		"""
 		morton = mort.morton(*idx)
+		key = morton % self.nbuckets
 
-		#mod by number of buckets in hash and get the index
-		i = morton % self.nbuckets
+		return morton, key
+
+	
+	def probe(self, morton, key):
+		"""
+		Probe for either a matching index or an empty position.
+
+		Parameters:
+			morton - Morton code of the index
+			key - The hashed key of this item.
+
+		Returns:
+			The index of either an empty bucket or the matching entry.
+		"""
 
 		# count the accesses
 		self.num_accesses = self.num_accesses + 1
-
-		while(1):
-			# If we do not have the right index, linearly probe
-			if self.hashtable.morton[i] == morton:
-				break
-
-			if self.hashtable.flag[i] == 0:
-				self.hashtable.key[i]
-				self.hashtable.morton[i] = morton
-				self.hashtable.idx[i] = idx
-				break
-
-			# do linear probing
-			self.num_collisions = self.num_collisions + 1
+		i = key
+		while True:
+			if self.hashtable.flag[i] == 0 or self.hashtable.morton[i] == morton:
+				return i
 			i = (i+1) % self.nbuckets
+			self.num_collisions = self.num_collisions + 1
 
-		return i
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
 	def set(self, i, v):
 
-		# get the hash item
-		index = self.search(i)
+		# hash the item
+		morton, key = self.hash(i)
+		index = self.probe(morton, key)
 
 		# either set or clear the item
 		if v != 0:
 			# mark as present
 			self.hashtable.flag[index] = 1
 
-			# copy the value
+			# handle hash information
+			self.hashtable.morton[index] = morton
+			self.hashtable.key[index] = key
+
+			# copy the value and index
 			self.hashtable.value[index] = v
+			self.hashtable.idx[index] = tuple(i)
 
 			# Increase hashtable count
 			self.hash_curr_size = self.hash_curr_size + 1
@@ -86,9 +101,15 @@ class hash_t:
 
 	def get(self, i):
 		# get the hash item
-		i = self.search(i)
+		morton, key = self.hash(i)
+		i = self.probe(morton, key)
 
-		return self.hashtable.value[i]
+		# return the item if it is present
+		if self.hashtable.flag[i] == 1:
+			return self.hashtable.value[i]
+		else:
+			return 0.0
+
 
 	def clear(self, ):
 		for i in range(self.nbuckets):
@@ -121,7 +142,9 @@ class hash_t:
 		done = 0
 
 		# get the index
-		index = self.search(idx)
+		morton, key = self.hash(idx)
+		index = self.probe(morton, key)
+
 		i = self.hashtable.key[index]
 		j = i+1
 
