@@ -239,29 +239,30 @@ class hash_t:
 		self.set(key, value)
 
 def read(file):
-	for i in tqdm(range(100),desc='Reading file'):
-		with open(file, 'r') as reader:
-			# Get the modes and dimensions from the header
-			first_line = reader.readline()
-			idx = first_line.split()
-			nmodes = int(idx.pop(0))
+	count=0
+	with open(file, 'r') as reader:
+		# Get the modes and dimensions from the header
+		first_line = reader.readline()
+		idx = first_line.split()
+		nmodes = int(idx.pop(0))
 
-			idx = [int(i) for i in idx]
+		idx = [int(i) for i in idx]
 
-			# Create the tensor
-			tns = hash_t(idx)
+		# Create the tensor
+		tns = hash_t(idx)
 
-			for row in reader:
-				row = row.split()
-				# Get the value
-				val = float(row.pop())
-				# The rest of the line is the indexes
-				idx = [int(i) for i in row]
-				#print('idx: ',idx)
-				#print('val: ',val)
-				tns.set(idx, val)
-
-		reader.close()
+		for row in reader:
+			#print(count)
+			count=count+1
+			row = row.split()
+			# Get the value
+			val = float(row.pop())
+			# The rest of the line is the indexes
+			idx = [int(i) for i in row]
+			#print('idx: ',idx)
+			#print('val: ',val)
+			#tns.set(idx, val)
+	reader.close()
 	return tns
 
 def write(file, tns):
