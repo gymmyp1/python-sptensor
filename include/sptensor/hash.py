@@ -1,6 +1,5 @@
 import time
-
-from morton import morton
+import morton as mort
 
 NBUCKETS = 128
 
@@ -32,7 +31,7 @@ class hash_t:
 	def search(self, idx):
 
 		#Compress idx using the morton encoding
-		morton = self.morton(idx)
+		morton = mort.morton(*idx)
 
 		#mod by number of buckets in hash and get the index
 		i = morton % self.nbuckets
@@ -153,12 +152,9 @@ class hash_t:
 			# go on for the next one */
 			i=j
 
+
 	def nnz(self):
 		print('to be implemented')
-
-	# Populate the mpz_t morton field with the morton encoding of the index.
-	def morton(self, index):
-		return morton(*index)
 
 
 	def get_slice(self, key):
