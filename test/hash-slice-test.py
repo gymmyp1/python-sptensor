@@ -18,3 +18,6 @@ for i in range(3):
         for k in range(3):
             idx = (i,j,k)
             print(idx, '=>', t[idx])
+
+print("Slice Test")
+hash.write(sys.stdout, t[:,:,0])

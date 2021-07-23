@@ -192,8 +192,8 @@ class hash_t:
 
 			# copy the things in our range
 			copy = True
-			for i in range(self.hashtable.idx[index]):
-				if self.hashtable.idx[i] not in key[i]:
+			for i in range(len(self.hashtable.idx[index])):
+				if self.hashtable.idx[index][i] not in key[i]:
 					copy = False
 					break
 			if copy:
