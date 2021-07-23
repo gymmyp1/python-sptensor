@@ -1,4 +1,3 @@
-from tqdm import tqdm
 import time
 
 from morton import morton
@@ -44,8 +43,6 @@ class hash_t:
 		while(1):
 			# If we do not have the right index, linearly probe
 			if self.hashtable.morton[i] == morton:
-				#print('item.morton != morton')
-				#item = self.sptensor_hash_probe(t,i) #probe sets the key
 				break
 
 			if self.hashtable.flag[i] == 0:
@@ -78,10 +75,9 @@ class hash_t:
 			self.hash_curr_size = self.hash_curr_size + 1
 		else:
 			# check if item is present in the table
-			#if (item.flag == 1):??
-			# remove it from the table
-			#print('removing value...')
-			self.remove(i)
+			if self.hashtable.flag[index] == 1:
+				# remove it from the table
+				self.remove(i)
 
 		# Check if we need to rehash
 		if((self.hash_curr_size/self.nbuckets) > 0.8):
@@ -92,9 +88,7 @@ class hash_t:
 	def get(self, i):
 		# get the hash item
 		i = self.search(i)
-		#print('item.idx=', item.idx)
-		#print('item.value= ',item.value)
-		#print('item.key= ',item.key)
+
 		return self.hashtable.value[i]
 
 	def clear(self, ):
@@ -104,7 +98,6 @@ class hash_t:
 
 
 	def rehash(self):
-		#print('rehashing...')
 
 		# Double the number of buckets
 		new_hash_size = self.nbuckets * 2
@@ -239,29 +232,27 @@ class hash_t:
 		self.set(key, value)
 
 def read(file):
-	for i in tqdm(range(100),desc='Reading file'):
-		with open(file, 'r') as reader:
-			# Get the modes and dimensions from the header
-			first_line = reader.readline()
-			idx = first_line.split()
-			nmodes = int(idx.pop(0))
+	with open(file, 'r') as reader:
+		# Get the modes and dimensions from the header
+		first_line = reader.readline()
+		idx = first_line.split()
+		nmodes = int(idx.pop(0))
 
-			idx = [int(i) for i in idx]
+		idx = [int(i) for i in idx]
 
-			# Create the tensor
-			tns = hash_t(idx)
+		# Create the tensor
+		tns = hash_t(idx)
 
-			for row in reader:
-				row = row.split()
-				# Get the value
-				val = float(row.pop())
-				# The rest of the line is the indexes
-				idx = [int(i) for i in row]
-				#print('idx: ',idx)
-				#print('val: ',val)
-				tns.set(idx, val)
+		for row in reader:
+			row = row.split()
+			# Get the value
+			val = float(row.pop())
+			# The rest of the line is the indexes
+			idx = [int(i) for i in row]
 
-		reader.close()
+			tns.set(idx, val)
+
+	reader.close()
 	return tns
 
 def write(file, tns):
