@@ -16,6 +16,8 @@ def main(argv):
     #hash.write(sys.stdout, t)
 
     print("--- %s seconds ---" % (time.time() - start_time))
-    
+    print("cumulative probe time: ", t.probe_time)
+    print("number of collisions: ", t.num_collisions)
+
 if __name__ == "__main__":
    main(sys.argv[1:])
