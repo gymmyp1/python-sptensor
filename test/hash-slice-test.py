@@ -1,7 +1,8 @@
 import os, sys, getopt
-sys.path.append('../include/sptensor/')
+sys.path.append('../')
 
-import hash
+import sptensor.hash as hash
+
 
 t = hash.hash_t((3,3,3))
 

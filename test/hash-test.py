@@ -1,7 +1,7 @@
 import os, sys, getopt
-sys.path.append('../include/sptensor/')
+sys.path.append('../')
 
-import hash
+import sptensor.hash as hash
 
 def main():
 

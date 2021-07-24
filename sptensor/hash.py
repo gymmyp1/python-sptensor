@@ -1,5 +1,5 @@
 import time
-import morton as mort
+import sptensor.morton as mort
 
 NBUCKETS = 128
 
