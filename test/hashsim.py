@@ -21,7 +21,6 @@ with open(sys.argv[1], 'r') as file:
 
         # append the index
         indexes.append(tuple(int(i) for i in row))
-    file.close()
 
 
 # compute the size of the hash table
@@ -41,11 +40,12 @@ def hash(idx):
 
     return m, k
 
-# print out the information about our table
-print("nbuckets", nbuckets, '\t')
+with open(sys.argv[2], 'w') as file:
+    # print out the information about our table
+    print("nbuckets", nbuckets, sep='\t', file=file)
 
-print('Morton', 'Key', sep='\t')
-# run the test on every value
-for idx in indexes:
-    m, k = hash(idx)
-    print(m, k, sep='\t')
+    print('Morton', 'Key', sep='\t', file=file)
+    # run the test on every value
+    for idx in indexes:
+        m, k = hash(idx)
+        print(m, k, sep='\t', file=file)
