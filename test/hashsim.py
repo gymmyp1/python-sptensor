@@ -40,6 +40,30 @@ def hash(idx):
 
     return m, k
 
+def jenkinsMortonHash(idx):
+    m = morton(*idx)
+    hash = m
+    hash += hash << 3
+    hash ^= hash >> 11
+    hash += hash << 15
+    k = hash % nbuckets
+    return m, k
+
+
+def jenkinsHash(idx):
+    hash = 0
+    for i in idx:
+        hash += i
+        hash += hash << 10
+        hash ^= hash >> 6
+    hash += hash << 3
+    hash ^= hash >> 11
+    hash += hash << 15
+
+    return morton(*idx), hash%nbuckets
+
+
+
 with open(sys.argv[2], 'w') as file:
     # print out the information about our table
     print("nbuckets", nbuckets, sep='\t', file=file)
@@ -47,5 +71,5 @@ with open(sys.argv[2], 'w') as file:
     print('Morton', 'Key', sep='\t', file=file)
     # run the test on every value
     for idx in indexes:
-        m, k = hash(idx)
+        m, k = jenkinsMortonHash(idx)
         print(m, k, sep='\t', file=file)
