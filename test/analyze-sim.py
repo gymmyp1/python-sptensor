@@ -1,6 +1,8 @@
 # This program analyzes the output from hashsim.py.
 import sys
 import matplotlib.pyplot as plt
+import math
+import numpy as np
 
 # load up the data
 data = []
@@ -37,15 +39,18 @@ N_numbers = nbuckets
 N_bins = 100
 
 # Generate 2D normally distributed numbers.
-counts_arr = np.array(counts)
 sn = math.sqrt(nbuckets)
 floor = math.floor(sn)
 ceil = math.ceil(sn)
-xy = np.reshape(counts_arr,(floor,ceil))
+padding =  floor * ceil - len(counts)
+if padding > 0:
+    counts = counts + [0] * padding
+xy = np.reshape(counts, (floor,ceil))
 #new = np.array_split(xy,2)
 #??
 # Construct 2D histogram from data using the 'plasma' colormap
-plt.hist2d(x, y, bins=N_bins, normed=False, cmap='plasma')
+#plt.hist2d(x, y, bins=N_bins, normed=False, cmap='plasma')
+plt.imshow(xy, cmap='plasma', interpolation='nearest')
 
 # Plot a colorbar with label.
 cb = plt.colorbar()
