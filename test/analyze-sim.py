@@ -38,7 +38,7 @@ colrate = collisions / entries * 100
 N_numbers = nbuckets
 N_bins = 100
 
-# Generate 2D normally distributed numbers.
+# Generate 2D version of the counts
 sn = math.sqrt(nbuckets)
 floor = math.floor(sn)
 ceil = math.ceil(sn)
@@ -46,30 +46,21 @@ padding =  floor * ceil - len(counts)
 if padding > 0:
     counts = counts + [0] * padding
 xy = np.reshape(counts, (floor,ceil))
-#new = np.array_split(xy,2)
-#??
-# Construct 2D histogram from data using the 'plasma' colormap
-#plt.hist2d(x, y, bins=N_bins, normed=False, cmap='plasma')
-plt.imshow(xy, cmap='plasma', interpolation='nearest')
+
+#
+fig, ax = plt.subplots()
+
+#display the heatmap
+img = ax.imshow(xy, cmap='plasma', interpolation='nearest')
 
 # Plot a colorbar with label.
-cb = plt.colorbar()
-cb.set_label('Number of entries')
+cb = plt.colorbar(img, ax=ax)
+cb.set_label('Number of Keys in Bucket')
 
 # Add title and labels to plot.
-plt.title('Heatmap of 2D normally distributed data points')
-plt.xlabel('x axis')
-plt.ylabel('y axis')
+ax.set_title('Heatmap of Hash Function (row-major)')
 
-# Show the plot.
-plt.show()
-
-# plot the distribution of entries
-'''fig, ax = plt.subplots()
-ax.set_title("Distribution of Hash Keys")
-ax.plot(range(nbuckets), counts)
-ax.set_xlabel('Bucket')
-ax.set_ylabel('Entry Count')
+# The text report
 report = '\n'.join((
     'Buckets: %d' % (nbuckets),
     'Entries: %d' % (entries,),
@@ -81,4 +72,6 @@ ax.text(0.95, 0.95,
         ha='right', va='top',
         transform=ax.transAxes,
         bbox=dict(boxstyle='round', facecolor='wheat'))
-plt.show()'''
+
+# Show the plot.
+plt.show()
