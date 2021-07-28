@@ -7,7 +7,7 @@ sys.path.append('../')
 from sptensor.morton import morton
 
 # The hash ratio (before rehashing)
-HASH_RATIO=0.8
+HASH_RATIO=0.7
 
 # read the data in. It is assumed that the file contains information in the following format:
 #   idx1 idx2 ... idxn value
@@ -28,7 +28,10 @@ with open(sys.argv[1], 'r') as file:
 reqSize = len(indexes) / HASH_RATIO
 exp = int(math.ceil(math.log2(reqSize)))
 nbuckets = max(128, 2**exp)
-
+bits = max(exp, 7)
+x = int(math.ceil(bits/8)) - 1
+y = 4*x - 1 
+z = int(math.ceil(bits/2))
 
 def hash(idx):
     """
@@ -43,9 +46,9 @@ def hash(idx):
 def jenkinsMortonHash(idx):
     m = morton(*idx)
     hash = m
-    hash += hash << 3
-    hash ^= hash >> 11
-    hash += hash << 15
+    hash += hash << x
+    hash ^= hash >> y
+    hash += hash << z
     k = hash % nbuckets
     return m, k
 
