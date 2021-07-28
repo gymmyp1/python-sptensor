@@ -30,8 +30,37 @@ for datum in data:
 # compute the collision percent
 colrate = collisions / entries * 100
 
+#Trying to create a heatmap style plot
+
+# Define numbers of generated data points and bins per axis.
+N_numbers = nbuckets
+N_bins = 100
+
+# Generate 2D normally distributed numbers.
+counts_arr = np.array(counts)
+sn = math.sqrt(nbuckets)
+floor = math.floor(sn)
+ceil = math.ceil(sn)
+xy = np.reshape(counts_arr,(floor,ceil))
+#new = np.array_split(xy,2)
+#??
+# Construct 2D histogram from data using the 'plasma' colormap
+plt.hist2d(x, y, bins=N_bins, normed=False, cmap='plasma')
+
+# Plot a colorbar with label.
+cb = plt.colorbar()
+cb.set_label('Number of entries')
+
+# Add title and labels to plot.
+plt.title('Heatmap of 2D normally distributed data points')
+plt.xlabel('x axis')
+plt.ylabel('y axis')
+
+# Show the plot.
+plt.show()
+
 # plot the distribution of entries
-fig, ax = plt.subplots()
+'''fig, ax = plt.subplots()
 ax.set_title("Distribution of Hash Keys")
 ax.plot(range(nbuckets), counts)
 ax.set_xlabel('Bucket')
@@ -47,4 +76,4 @@ ax.text(0.95, 0.95,
         ha='right', va='top',
         transform=ax.transAxes,
         bbox=dict(boxstyle='round', facecolor='wheat'))
-plt.show()
+plt.show()'''
