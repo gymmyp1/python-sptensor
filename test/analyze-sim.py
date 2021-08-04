@@ -32,7 +32,22 @@ for datum in data:
 # compute the collision percent
 colrate = collisions / entries * 100
 
-#Trying to create a heatmap style plot
+sum = 0
+count = 0
+max = 0
+# Average the # of non-zero xounts in the array / number of non-zeroes
+for i in range(len(counts)):
+    if counts[i] != 0:
+        sum = sum + counts[i]
+        count = count + 1
+        if counts[i] > max:
+            max = counts[i]
+
+avg = sum/count
+print("avg probe depth: ", avg)
+print('max probe depth: ', max)
+
+# Create heatmap styple plot
 
 # Define numbers of generated data points and bins per axis.
 N_numbers = nbuckets
@@ -67,8 +82,8 @@ report = '\n'.join((
     'Collisions: %d' % (collisions,),
     'Collision Rate: %.2f%%' % (colrate,)
 ))
-ax.text(0.95, 0.95, 
-        report, 
+ax.text(0.95, 0.95,
+        report,
         ha='right', va='top',
         transform=ax.transAxes,
         bbox=dict(boxstyle='round', facecolor='wheat'))
