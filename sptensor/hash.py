@@ -15,8 +15,10 @@ class HashTable:
 		self.bits = int(math.ceil(math.log2(self.nbuckets)))
 		self.sx = int(math.ceil(self.bits/8)) - 1
 		self.sy = 4*self.sx - 1 
+		if self.sy < 1:
+			self.sy = 1
 		self.sz = int(math.ceil(self.bits/2))
-		self.mask = ~self.nbuckets
+		self.mask = ~(self.nbuckets-1)
 		self.num_collisions = 0
 		self.num_accesses = 0
 		self.num_probe = 0
@@ -24,21 +26,21 @@ class HashTable:
 
 
 	def hash(self, idx):
-  		"""
+		"""
 		Hash the index and return the morton code and key.
 
 		Parameters:
 			idx - The index to hash
-		
+
 		Returns:
 			morton, key
 		"""
-		m = mort(*idx)
+		m = mort.morton(*idx)
 		hash = m
 		hash += hash << self.sx
 		hash ^= hash >> self.sy
 		hash += hash << self.sz
-		k = hash & self.mask
+		k = hash % self.nbuckets
 		return m, k
 	
 
@@ -76,7 +78,7 @@ class hash_t:
 		self.nmodes = len(modes)
 
 		#Hash specific fields
-		self.hashtable = HashTable(self.nbuckets)
+		self.hashtable = HashTable(NBUCKETS)
 		self.hash_curr_size = 0
 		self.load_factor = 0.7
 
@@ -85,8 +87,8 @@ class hash_t:
 	def set(self, i, v):
 
 		# hash the item
-		morton, key = self.hash(i)
-		index = self.probe(morton, key)
+		morton, key = self.hashtable.hash(i)
+		index = self.hashtable.probe(morton, key)
 
 		# either set or clear the item
 		if v != 0:
@@ -115,15 +117,15 @@ class hash_t:
 				pass
 
 		# Check if we need to rehash
-		if((self.hash_curr_size/self.nbuckets) > 0.8):
+		if((self.hash_curr_size/self.hashtable.nbuckets) > 0.8):
 			self.rehash()
 
 		return
 
 	def get(self, i):
 		# get the hash item
-		morton, key = self.hash(i)
-		i = self.probe(morton, key)
+		morton, key = self.hashtable.hash(i)
+		i = self.hashtable.probe(morton, key)
 
 		# return the item if it is present
 		if self.hashtable.flag[i] == 1:
@@ -161,8 +163,8 @@ class hash_t:
 		done = 0
 
 		# get the index
-		morton, key = self.hash(idx)
-		index = self.probe(morton, key)
+		morton, key = self.hashtable.hash(idx)
+		index = self.hashtable.probe(morton, key)
 
 		i = self.hashtable.key[index]
 		j = i+1
