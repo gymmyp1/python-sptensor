@@ -72,19 +72,31 @@ class HashTable:
 
 
 class hash_t:
-	def __init__(self, modes):
-		#sptensor fields
-		self.modes = modes
-		self.nmodes = len(modes)
-
+	def __init__(self, modes=None):
 		#Hash specific fields
 		self.hashtable = HashTable(NBUCKETS)
 		self.hash_curr_size = 0
 		self.load_factor = 0.7
 
+		#sptensor fields
+		self.modes = modes
+		if modes:
+			self.nmodes = len(modes)
+		else:
+			self.nmodes = 0
+	
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
 	def set(self, i, v):
+		# build the modes if we need
+		if not self.modes:
+			self.modes = [0] * len(i)
+			self.nmodes = len(i)
+		
+		# update any mode maxes as needed
+		for m in range(self.nmodes):
+			if self.modes[m] < i[m]:
+				self.modes[m] = i[m]
 
 		# hash the item
 		morton, key = self.hashtable.hash(i)
@@ -274,15 +286,8 @@ class hash_t:
 def read(file):
 	count=0
 	with open(file, 'r') as reader:
-		# Get the modes and dimensions from the header
-		first_line = reader.readline()
-		idx = first_line.split()
-		nmodes = int(idx.pop(0))
-
-		idx = [int(i) for i in idx]
-
 		# Create the tensor
-		tns = hash_t(idx)
+		tns = hash_t()
 
 		for row in reader:
 			#print(count)
@@ -309,7 +314,7 @@ def write(file, tns):
 
 	print('\n',end='')
 
-	for i in range(tns.nbuckets):
+	for i in range(tns.hashtable.nbuckets):
 		if tns.hashtable.flag[i] == 1:
 			# print the indexes
 			for j in range(tns.nmodes):
