@@ -1,4 +1,5 @@
 import time
+import math
 import sptensor.morton as mort
 
 NBUCKETS = 128
@@ -11,17 +12,11 @@ class HashTable:
 		self.value = [0.0] * nbuckets
 		self.idx = [None] * nbuckets
 		self.flag = [0] * nbuckets
-
-class hash_t:
-	def __init__(self, modes):
-		#sptensor fields
-		self.modes = modes
-		self.nmodes = len(modes)
-
-		#Hash specific fields
-		self.nbuckets = NBUCKETS
-		self.hashtable = HashTable(self.nbuckets)
-		self.hash_curr_size = 0
+		self.bits = int(math.ceil(math.log2(self.nbuckets)))
+		self.sx = int(math.ceil(self.bits/8)) - 1
+		self.sy = 4*self.sx - 1 
+		self.sz = int(math.ceil(self.bits/2))
+		self.mask = ~self.nbuckets
 		self.num_collisions = 0
 		self.num_accesses = 0
 		self.num_probe = 0
@@ -29,7 +24,7 @@ class hash_t:
 
 
 	def hash(self, idx):
-		"""
+  		"""
 		Hash the index and return the morton code and key.
 
 		Parameters:
@@ -38,12 +33,15 @@ class hash_t:
 		Returns:
 			morton, key
 		"""
-		morton = mort.morton(*idx)
-		key = morton % self.nbuckets
-
-		return morton, key
-
+		m = mort(*idx)
+		hash = m
+		hash += hash << self.sx
+		hash ^= hash >> self.sy
+		hash += hash << self.sz
+		k = hash & self.mask
+		return m, k
 	
+
 	def probe(self, morton, key):
 		"""
 		Probe for either a matching index or an empty position.
@@ -61,13 +59,26 @@ class hash_t:
 		i = key
 
 		# check for collision
-		if self.hashtable.flag[i] != 0 and self.hashtable.morton[i] != morton:
+		if self.flag[i] != 0 and self.morton[i] != morton:
 			self.num_collisions = self.num_collisions + 1
 		while True:
-			if self.hashtable.flag[i] == 0 or self.hashtable.morton[i] == morton:
+			if self.flag[i] == 0 or self.morton[i] == morton:
 				return i
 			i = (i+1) % self.nbuckets
 			self.num_probe = self.num_probe + 1
+
+
+
+class hash_t:
+	def __init__(self, modes):
+		#sptensor fields
+		self.modes = modes
+		self.nmodes = len(modes)
+
+		#Hash specific fields
+		self.hashtable = HashTable(self.nbuckets)
+		self.hash_curr_size = 0
+		self.load_factor = 0.7
 
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
@@ -79,19 +90,23 @@ class hash_t:
 
 		# either set or clear the item
 		if v != 0:
-			# mark as present
-			self.hashtable.flag[index] = 1
-
-			# handle hash information
-			self.hashtable.morton[index] = morton
-			self.hashtable.key[index] = key
-
-			# copy the value and index
+			#set the value
 			self.hashtable.value[index] = v
-			self.hashtable.idx[index] = tuple(i)
 
-			# Increase hashtable count
-			self.hash_curr_size = self.hash_curr_size + 1
+			# handle new assignments
+			if self.hashtable.flag[index] == 0:
+				# mark as present
+				self.hashtable.flag[index] = 1
+
+				# handle hash information
+				self.hashtable.morton[index] = morton
+				self.hashtable.key[index] = key
+
+				# copy the value and index
+				self.hashtable.idx[index] = tuple(i)
+
+				# Increase hashtable count
+				self.hash_curr_size = self.hash_curr_size + 1
 		else:
 			# check if item is present in the table
 			if self.hashtable.flag[index] == 1:
@@ -126,21 +141,19 @@ class hash_t:
 	def rehash(self):
 
 		# Double the number of buckets
-		new_hash_size = self.nbuckets * 2
+		new_hash_size = self.hashtable.nbuckets * 2
 		new_hashtable = HashTable(new_hash_size)
 
-		# save the old hash table
-		old_hash_size = self.nbuckets
+		#save the old hashtable
 		old_hashtable = self.hashtable
 
 		# install the new one
-		self.nbuckets =  new_hash_size
 		self.hashtable = new_hashtable
 
 		# Rehash all existing items in t's hashtable to the new table
-		for i in range(old_hash_size):
-			#If occupied, we need to copy it to the other table!
-			if(self.hashtable.flag[i] == 1):
+		for i in range(old_hashtable.nbuckets):
+			#if occupied, we need to copy it to the other table!
+			if(old_hashtable.flag[i] == 1):
 				self.set(self.hashtable.idx[i], self.hashtable.value[i])
 
 
