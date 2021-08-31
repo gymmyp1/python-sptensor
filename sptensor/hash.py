@@ -24,7 +24,19 @@ class HashTable:
 		self.num_probe = 0
 		self.probe_time = 0.0
 
+	def __iter__(self):
+		self.a = self.hashtable.value[0]
+		self.i = 0
+		return self
 
+	def __next__(self):
+		if self.i < self.nbuckets:
+			self.a = self.hashtable.value[self.i]
+			self.i += 1
+			return self.a
+		else:
+			raise StopIteration
+			
 	def hash(self, idx):
 		"""
 		Hash the index and return the morton code and key.
