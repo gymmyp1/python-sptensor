@@ -14,7 +14,7 @@ class HashTable:
 		self.flag = [0] * nbuckets
 		self.bits = int(math.ceil(math.log2(self.nbuckets)))
 		self.sx = int(math.ceil(self.bits/8)) - 1
-		self.sy = 4*self.sx - 1 
+		self.sy = 4*self.sx - 1
 		if self.sy < 1:
 			self.sy = 1
 		self.sz = int(math.ceil(self.bits/2))
@@ -24,19 +24,6 @@ class HashTable:
 		self.num_probe = 0
 		self.probe_time = 0.0
 
-	def __iter__(self):
-		self.a = self.hashtable.value[0]
-		self.i = 0
-		return self
-
-	def __next__(self):
-		if self.i < self.nbuckets:
-			self.a = self.hashtable.value[self.i]
-			self.i += 1
-			return self.a
-		else:
-			raise StopIteration
-			
 	def hash(self, idx):
 		"""
 		Hash the index and return the morton code and key.
@@ -54,7 +41,7 @@ class HashTable:
 		hash += hash << self.sz
 		k = hash % self.nbuckets
 		return m, k
-	
+
 
 	def probe(self, morton, key):
 		"""
@@ -81,8 +68,6 @@ class HashTable:
 			i = (i+1) % self.nbuckets
 			self.num_probe = self.num_probe + 1
 
-
-
 class hash_t:
 	def __init__(self, modes=None):
 		#Hash specific fields
@@ -90,13 +75,60 @@ class hash_t:
 		self.hash_curr_size = 0
 		self.load_factor = 0.7
 
+		#iterators
+		self.dense = iter(self.dense_itr(self))
+		self.nnz = iter(self.nnz_itr(self))
+
 		#sptensor fields
 		self.modes = modes
 		if modes:
 			self.nmodes = len(modes)
 		else:
 			self.nmodes = 0
-	
+
+	'''Dense and non-zero iterator classes
+	'''
+	class dense_itr:
+		def __init__(self, hash_type):
+			self.hashtable = hash_type.hashtable
+			self.nbuckets = hash_type.hashtable.nbuckets
+
+		def __iter__(self):
+			self.a = self.hashtable.value[0]
+			self.i = 0
+			return self
+
+		def __next__(self):
+			if self.i < self.nbuckets:
+				self.a = self.hashtable.value[self.i]
+				self.i += 1
+				return self.a
+			else:
+				raise StopIteration
+
+	class nnz_itr:
+		def __init__(self, hash_type):
+			self.hashtable = hash_type.hashtable
+			self.nbuckets = hash_type.hashtable.nbuckets
+
+		def __iter__(self):
+			self.a = self.hashtable.value[0]
+			self.i = 0
+			return self
+
+		def __next__(self):
+			if self.i < self.nbuckets:
+				#find the next non-zero value
+				while self.hashtable.value[self.i] == 0.0:
+					self.i += 1
+					if self.i == self.nbuckets-1:
+						raise StopIteration
+
+				self.a = self.hashtable.value[self.i]
+				self.i += 1
+				return self.a
+			else:
+				raise StopIteration
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
 	def set(self, i, v):
@@ -104,7 +136,7 @@ class hash_t:
 		if not self.modes:
 			self.modes = [0] * len(i)
 			self.nmodes = len(i)
-		
+
 		# update any mode maxes as needed
 		for m in range(self.nmodes):
 			if self.modes[m] < i[m]:
