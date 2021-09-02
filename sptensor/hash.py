@@ -131,7 +131,6 @@ class hash_t:
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
 	def set(self, i, v):
-		print(type(i), type(v), type(self.modes))
 		# build the modes if we need
 		if not self.modes:
 			self.modes = [0] * len(i)
@@ -209,7 +208,7 @@ class hash_t:
 		for i in range(old_hashtable.nbuckets):
 			#if occupied, we need to copy it to the other table!
 			if(old_hashtable.flag[i] == 1):
-				self.set(mort.decode(self.hashtable.morton[i], self.nmodes), self.hashtable.value[i])
+				self.set(mort.decode(old_hashtable.morton[i], self.nmodes), old_hashtable.value[i])
 
 
 	def remove(self, idx):
@@ -335,14 +334,13 @@ def read(file):
 			#print(count)
 			count=count+1
 			if count % 1000 == 0:
-				print("Count: ", count, "Collisions:", tns.num_collisions, "Probes:", tns.num_probe)
+				print("Count: ", count, "Collisions:", tns.hashtable.num_collisions, "Probes:", tns.hashtable.num_probe)
 			row = row.split()
 			# Get the value
 			val = float(row.pop())
 			# The rest of the line is the indexes
 			idx = [int(i) for i in row]
 			x=x+1
-			print(x,len(row), idx, val)
 
 			tns.set(idx, val)
 
