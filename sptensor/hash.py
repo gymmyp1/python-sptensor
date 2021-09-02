@@ -4,79 +4,19 @@ import sptensor.morton as mort
 
 NBUCKETS = 128
 
-class HashTable:
-	def __init__(self, nbuckets):
-		self.nbuckets = nbuckets
-		self.morton = [None] * nbuckets
-		self.key = [0] * nbuckets
-		self.value = [0.0] * nbuckets
-		self.flag = [0] * nbuckets
-		self.bits = int(math.ceil(math.log2(self.nbuckets)))
-		self.sx = int(math.ceil(self.bits/8)) - 1
-		self.sy = 4*self.sx - 1
-		if self.sy < 1:
-			self.sy = 1
-		self.sz = int(math.ceil(self.bits/2))
-		self.mask = ~(self.nbuckets-1)
-		self.num_collisions = 0
-		self.num_accesses = 0
-		self.num_probe = 0
-		self.probe_time = 0.0
-
-	def hash(self, idx):
-		"""
-		Hash the index and return the morton code and key.
-
-		Parameters:
-			idx - The index to hash
-
-		Returns:
-			morton, key
-		"""
-		m = mort.encode(*idx)
-		hash = m
-		hash += hash << self.sx
-		hash ^= hash >> self.sy
-		hash += hash << self.sz
-		k = hash % self.nbuckets
-		return m, k
-
-
-	def probe(self, morton, key):
-		"""
-		Probe for either a matching index or an empty position.
-
-		Parameters:
-			morton - Morton code of the index
-			key - The hashed key of this item.
-
-		Returns:
-			The index of either an empty bucket or the matching entry.
-		"""
-
-		# count the accesses
-		self.num_accesses = self.num_accesses + 1
-		i = key
-
-		# check for collision
-		if self.flag[i] != 0 and self.morton[i] != morton:
-			self.num_collisions = self.num_collisions + 1
-		while True:
-			if self.flag[i] == 0 or self.morton[i] == morton:
-				return i
-			i = (i+1) % self.nbuckets
-			self.num_probe = self.num_probe + 1
 
 class hash_t:
 	def __init__(self, modes=None):
 		#Hash specific fields
-		self.hashtable = HashTable(NBUCKETS)
 		self.hash_curr_size = 0
 		self.load_factor = 0.7
 
+		#initialize the index hash
+		self.hash_init(NBUCKETS)
+
 		#iterators
-		self.dense = iter(self.dense_itr(self))
-		self.nnz = iter(self.nnz_itr(self))
+		#self.dense = iter(self.dense_itr(self))
+		#self.nnz = iter(self.nnz_itr(self))
 
 		#sptensor fields
 		self.modes = modes
@@ -141,111 +81,125 @@ class hash_t:
 			if self.modes[m] < i[m]:
 				self.modes[m] = i[m]
 
-		# hash the item
-		morton, key = self.hashtable.hash(i)
-		index = self.hashtable.probe(morton, key)
+		# find the index
+		morton = mort.encode(*i)
+		k, i = self.search(morton)
 
-		# either set or clear the item
-		if v != 0:
-			#set the value
-			self.hashtable.value[index] = v
-
-			# handle new assignments
-			if self.hashtable.flag[index] == 0:
-				# mark as present
-				self.hashtable.flag[index] = 1
-
-				# handle hash information
-				self.hashtable.morton[index] = morton
-				self.hashtable.key[index] = key
-
-				# Increase hashtable count
+		# insert accordingly
+		if i == -1:
+			if v != 0:
+				if self.table[k] == None:
+					self.table[k] = []
+				self.table[k].append((morton, v))
 				self.hash_curr_size = self.hash_curr_size + 1
+				depth = len(self.table[k])
+				if depth > self.max_chain_depth:
+					self.max_chain_depth = depth
 		else:
-			# check if item is present in the table
-			if self.hashtable.flag[index] == 1:
-				# remove it from the table
-				#self.remove(i)
-				pass
+			if v !=0:
+				self.table[k][i] = (morton, v)
+			else:
+				self.remove(k,i)
+
 
 		# Check if we need to rehash
-		if((self.hash_curr_size/self.hashtable.nbuckets) > 0.8):
+		if((self.hash_curr_size/self.nbuckets) > 0.8):
 			self.rehash()
 
-		return
 
 	def get(self, i):
 		# get the hash item
-		morton, key = self.hashtable.hash(i)
-		i = self.hashtable.probe(morton, key)
+		morton = mort.encode(*i)
+		k, i = self.search(morton)
 
 		# return the item if it is present
-		if self.hashtable.flag[i] == 1:
-			return self.hashtable.value[i]
+		if i != -1:
+			return self.table[k][i][1]
 		else:
 			return 0.0
 
 
 	def clear(self, ):
 		for i in range(self.nbuckets):
-			self.hashtable.flag[i] = 0
+			self.hash_init(self.nbuckets)
 		return
 
 
 	def rehash(self):
+		old = self.table
 
 		# Double the number of buckets
-		new_hash_size = self.hashtable.nbuckets * 2
-		new_hashtable = HashTable(new_hash_size)
+		self.hash_init(self.nbuckets * 2)
 
-		#save the old hashtable
-		old_hashtable = self.hashtable
-
-		# install the new one
-		self.hashtable = new_hashtable
-
-		# Rehash all existing items in t's hashtable to the new table
-		for i in range(old_hashtable.nbuckets):
-			#if occupied, we need to copy it to the other table!
-			if(old_hashtable.flag[i] == 1):
-				self.set(mort.decode(old_hashtable.morton[i], self.nmodes), old_hashtable.value[i])
-
-
-	def remove(self, idx):
-		done = 0
-
-		# get the index
-		morton, key = self.hashtable.hash(idx)
-		index = self.hashtable.probe(morton, key)
-
-		i = self.hashtable.key[index]
-		j = i+1
-
-		# slide back as needed
-		while(done == 0):
-			# assume we are done
-			done=1
-
-			# mark as not present
-			self.hashtable.flag[i] = 0
-
-			# go to the next probe slot
-			j = (i+1)%j
-
-			# check to see if we need to slide back
-			if(self.hashtable.flag[j] == 0):
+		# reinsert everything into the hash index
+		for bucket in old:
+			if not bucket:
 				continue
+			for item in bucket:
+				k = self.hash(item[0])
+				if self.table[k]==None:
+					self.table[k] = []
+				self.table[k].append(item)
+				depth = len(self.table[k]) 
+				if depth > self.max_chain_depth:
+					self.max_chain_depth = depth
 
-			# check to see if this one should be pushed back
-			if (self.hashtable.key[j] == self.hashtable.key[j]):
-				#print('key[i] == key[j]')
-				done = 0
-				self.hashtable.flag[i] = self.hashtable.flag[j]
-				self.hashtable.morton[i] = self.hashtable.morton[j]
-				self.hashtable.value[i] = self.hashtable.value[j]
 
-			# go on for the next one */
-			i=j
+
+	def hash_init(self, nbuckets):
+		self.nbuckets=nbuckets
+		self.table=[None]*nbuckets
+		self.bits = int(math.ceil(math.log2(self.nbuckets)))
+		self.sx = int(math.ceil(self.bits/8)) - 1
+		self.sy = 4*self.sx - 1
+		if self.sy < 1:
+			self.sy = 1
+		self.sz = int(math.ceil(self.bits/2))
+		self.mask = ~(self.nbuckets-1)
+		self.num_collisions=0
+		self.max_chain_depth=0
+		self.probe_time=0
+
+
+	def hash(self, m):
+		"""
+		Hash the index and return the morton code and key.
+
+		Parameters:
+			m - The morton code to hash
+
+		Returns:
+			key
+		"""
+		hash = m
+		hash += hash << self.sx
+		hash ^= hash >> self.sy
+		hash += hash << self.sz
+		k = hash % self.nbuckets
+		return k
+
+
+	def search(self, m):
+		"""
+		Search for a morton coded entry in the index hash.
+		Parameters:
+			m - The morton entry
+		Returns:
+			If m is found, it returns the (k, i) tuple where k is
+			  the bucket and i is the index in the chain
+			if m is not found, it returns (k, -1).
+		"""
+		k = self.hash(m)
+		if self.table[k] != None:
+			for i, item in enumerate(self.table[k]):
+				if item[0] == m:
+					return (k, i)
+		return (k, -1)
+
+
+
+	def remove(self, k, i):
+		self.table[k].pop(i)
 
 
 	def nnz(self):
@@ -269,7 +223,7 @@ class hash_t:
 		result = hash_t(resultModes)
 
 		# copy the relevant non-zeroes
-		for index in range(self.hashtable.nbuckets):
+		for index in range(self.nbuckets):
 			#skip the not-present
 			if self.hashtable.flag[index] != 1:
 				continue
@@ -334,7 +288,7 @@ def read(file):
 			#print(count)
 			count=count+1
 			if count % 1000 == 0:
-				print("Count: ", count, "Collisions:", tns.hashtable.num_collisions, "Probes:", tns.hashtable.num_probe)
+				print("Count: ", count, "Max Chain Depth:", tns.max_chain_depth)
 			row = row.split()
 			# Get the value
 			val = float(row.pop())
@@ -348,19 +302,8 @@ def read(file):
 	return tns
 
 def write(file, tns):
-
-	# print the preamble
-	print(tns.nmodes, end=' ')
-	for i in range(tns.nmodes):
-		print(tns.modes[i], end=' ')
-
-	print('\n',end='')
-
-	for i in range(tns.hashtable.nbuckets):
-		if tns.hashtable.flag[i] == 1:
-			# print the indexes
-			for j in range(tns.nmodes):
-				print(tns.hashtable.idx[i][j], end=' ')
-
-			#print the value
-			print(tns.hashtable.value[i])
+	for bucket in tns.table:
+		if bucket == None:
+			continue
+		for item in bucket:
+			print(*mort.decode(item[0], tns.nmodes), item[1])
