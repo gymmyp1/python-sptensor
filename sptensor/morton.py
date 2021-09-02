@@ -1,4 +1,4 @@
-def morton(*vals):
+def encode(*vals):
     """
     Compute the morton encoding for the data passed into the function.
 
@@ -30,3 +30,28 @@ def morton(*vals):
             bit = bit << 1
     
     return result
+
+
+def decode(m, n):
+    """
+    Extract integers from a morton encoding.
+    Parameters:
+        m - The morton encoded set
+        n - The number of integers present
+    Returns:
+        The list of decoded integers
+    """
+    # amount to shift by
+    shift = 0
+    
+    # construct the list
+    l = [0] * n
+
+    # continue until we run out of bits
+    while m > 0:
+        for i in range(n):
+            l[i] = l[i] | ((m & 1) << shift)
+            m = m >> 1
+        shift += 1
+    
+    return l

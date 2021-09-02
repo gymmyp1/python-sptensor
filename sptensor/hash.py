@@ -10,7 +10,6 @@ class HashTable:
 		self.morton = [None] * nbuckets
 		self.key = [0] * nbuckets
 		self.value = [0.0] * nbuckets
-		self.idx = [None] * nbuckets
 		self.flag = [0] * nbuckets
 		self.bits = int(math.ceil(math.log2(self.nbuckets)))
 		self.sx = int(math.ceil(self.bits/8)) - 1
@@ -47,7 +46,7 @@ class HashTable:
 		Returns:
 			morton, key
 		"""
-		m = mort.morton(*idx)
+		m = mort.encode(*idx)
 		hash = m
 		hash += hash << self.sx
 		hash ^= hash >> self.sy
@@ -100,6 +99,7 @@ class hash_t:
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
 	def set(self, i, v):
+		print(type(i), type(v), type(self.modes))
 		# build the modes if we need
 		if not self.modes:
 			self.modes = [0] * len(i)
@@ -127,9 +127,6 @@ class hash_t:
 				# handle hash information
 				self.hashtable.morton[index] = morton
 				self.hashtable.key[index] = key
-
-				# copy the value and index
-				self.hashtable.idx[index] = tuple(i)
 
 				# Increase hashtable count
 				self.hash_curr_size = self.hash_curr_size + 1
@@ -180,7 +177,7 @@ class hash_t:
 		for i in range(old_hashtable.nbuckets):
 			#if occupied, we need to copy it to the other table!
 			if(old_hashtable.flag[i] == 1):
-				self.set(self.hashtable.idx[i], self.hashtable.value[i])
+				self.set(mort.decode(self.hashtable.morton[i], self.nmodes), self.hashtable.value[i])
 
 
 	def remove(self, idx):
@@ -215,7 +212,6 @@ class hash_t:
 				self.hashtable.flag[i] = self.hashtable.flag[j]
 				self.hashtable.morton[i] = self.hashtable.morton[j]
 				self.hashtable.value[i] = self.hashtable.value[j]
-				self.hashtable.idx[i] = self.hashtable.idx[j]
 
 			# go on for the next one */
 			i=j
@@ -249,12 +245,13 @@ class hash_t:
 
 			# copy the things in our range
 			copy = True
-			for i in range(len(self.hashtable.idx[index])):
-				if self.hashtable.idx[index][i] not in key[i]:
+			idx = mort.decode(self.hashtable.morton[index], self.nmodes)
+			for i in range(len(idx)):
+				if idx[i] not in key[i]:
 					copy = False
 					break
 			if copy:
-				result.set(self.hashtable.idx[index], self.hashtable.value[index])
+				result.set(idx, self.hashtable.value[index])
 		return result
 
 
@@ -301,6 +298,7 @@ def read(file):
 		# Create the tensor
 		tns = hash_t()
 
+		x=0
 		for row in reader:
 			#print(count)
 			count=count+1
@@ -311,6 +309,8 @@ def read(file):
 			val = float(row.pop())
 			# The rest of the line is the indexes
 			idx = [int(i) for i in row]
+			x=x+1
+			print(x,len(row), idx, val)
 
 			tns.set(idx, val)
 

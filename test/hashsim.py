@@ -4,7 +4,7 @@ import os, sys, getopt
 import math
 sys.path.append('../')
 
-from sptensor.morton import morton
+from sptensor.morton import encode
 
 # The hash ratio (before rehashing)
 HASH_RATIO=0.7
@@ -38,13 +38,13 @@ def hash(idx):
     This is the hashing function. It returns the hash and the proposed key. For the
     given index.
     """
-    m = morton(*idx)
+    m = encode(*idx)
     k = m % nbuckets
 
     return m, k
 
 def jenkinsMortonHash(idx):
-    m = morton(*idx)
+    m = encode(*idx)
     hash = m
     hash += hash << x
     hash ^= hash >> y
@@ -63,7 +63,7 @@ def jenkinsHash(idx):
     hash ^= hash >> 11
     hash += hash << 15
 
-    return morton(*idx), hash%nbuckets
+    return encode(*idx), hash%nbuckets
 
 
 
