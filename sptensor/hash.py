@@ -39,17 +39,13 @@ class hash_t:
 
 		def __next__(self):
 
-			while self.table[self.bi] == None:
-				self.bi += 1
-				print("skipping None buckets...")
-				print("bi=",self.bi)
+			while self.bi < self.nbuckets:
+				if self.table[self.bi] == None:
+					self.bi += 1
+					continue
+					print('bi = ',self.bi)
+					print('li = ',self.li)
 
-				if self.bi == self.nbuckets-1:
-					raise StopIteration
-
-			print('bi = ',self.bi)
-			print('li = ',self.li)
-			if self.bi < self.nbuckets:
 				self.v = self.table[self.bi][self.li][1]
 				self.li += 1
 
