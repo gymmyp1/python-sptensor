@@ -15,7 +15,7 @@ class hash_t:
 		self.hash_init(NBUCKETS)
 
 		#iterators
-		#self.dense = iter(self.dense_itr(self))
+		self.dense = iter(self.dense_itr(self))
 		#self.nnz = iter(self.nnz_itr(self))
 
 		#sptensor fields
@@ -29,19 +29,36 @@ class hash_t:
 	'''
 	class dense_itr:
 		def __init__(self, hash_type):
-			self.hashtable = hash_type.hashtable
-			self.nbuckets = hash_type.hashtable.nbuckets
+			self.table = hash_type.table
+			self.nbuckets = hash_type.nbuckets
 
 		def __iter__(self):
-			self.a = self.hashtable.value[0]
-			self.i = 0
+			self.bi = 0		#current bucket index
+			self.li = 0		#current index in list
 			return self
 
 		def __next__(self):
-			if self.i < self.nbuckets:
-				self.a = self.hashtable.value[self.i]
-				self.i += 1
-				return self.a
+
+			while self.table[self.bi] == None:
+				self.bi += 1
+				print("skipping None buckets...")
+				print("bi=",self.bi)
+
+				if self.bi == self.nbuckets-1:
+					raise StopIteration
+
+			print('bi = ',self.bi)
+			print('li = ',self.li)
+			if self.bi < self.nbuckets:
+				self.v = self.table[self.bi][self.li][1]
+				self.li += 1
+
+				#Are we at the end of the list?
+				if self.li == len(self.table[self.bi]):
+					self.li = 0
+					self.bi += 1
+
+				return self.v
 			else:
 				raise StopIteration
 
@@ -140,7 +157,7 @@ class hash_t:
 				if self.table[k]==None:
 					self.table[k] = []
 				self.table[k].append(item)
-				depth = len(self.table[k]) 
+				depth = len(self.table[k])
 				if depth > self.max_chain_depth:
 					self.max_chain_depth = depth
 
@@ -200,10 +217,6 @@ class hash_t:
 
 	def remove(self, k, i):
 		self.table[k].pop(i)
-
-
-	def nnz(self):
-		print('to be implemented')
 
 
 	def get_slice(self, key):
