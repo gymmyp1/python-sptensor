@@ -10,13 +10,13 @@ class hash_t:
 	def __init__(self, modes=None):
 		#Hash specific fields
 		self.hash_curr_size = 0
-		self.load_factor = 0.7
+		self.load_factor = 0.6
 
 		#initialize the index hash
 		self.hash_init(NBUCKETS)
 
 		#iterators
-		self.dense = iter(self.dense_itr(self))
+		#self.dense = iter(self.dense_itr(self))
 		#self.nnz = iter(self.nnz_itr(self))
 
 		#sptensor fields
@@ -28,7 +28,7 @@ class hash_t:
 
 	'''Dense and non-zero iterator classes
 	'''
-	class dense_itr:
+	'''class dense_itr:
 		def __init__(self, hash_type):
 			self.table = hash_type.table
 			self.nbuckets = hash_type.nbuckets
@@ -81,7 +81,7 @@ class hash_t:
 				self.i += 1
 				return self.a
 			else:
-				raise StopIteration
+				raise StopIteration '''
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
 	def set(self, i, v):
@@ -117,7 +117,7 @@ class hash_t:
 
 
 		# Check if we need to rehash
-		if((self.hash_curr_size/self.nbuckets) > 0.8):
+		if((self.hash_curr_size/self.nbuckets) > self.load_factor):
 			self.rehash()
 
 
@@ -290,14 +290,14 @@ class hash_t:
 
 	def mttkrp(self, u, n):
 		'''
-		Carry out mttkrp between the tensor and an array of matrices, 
+		Carry out mttkrp between the tensor and an array of matrices,
 		unfolding the tensor along mode n.
 
 		Parameters:
 			u - A list of numpy matrices, these correspond to the modes
 				in the tensor, other than n. If i is the dimension in
 				mode x, then u[x] must be an i x f matrix.
-			n - The mode along which the tensor is unfolded for the 
+			n - The mode along which the tensor is unfolded for the
 				product.
 		Returns:
 			A numpy matrix with dimensions i_n x f
@@ -356,8 +356,8 @@ def read(file):
 		for row in reader:
 			#print(count)
 			count=count+1
-			if count % 1000 == 0:
-				print("Count: ", count, "Max Chain Depth:", tns.max_chain_depth)
+			#if count % 1000 == 0:
+				#print("Count: ", count, "Max Chain Depth:", tns.max_chain_depth)
 			row = row.split()
 			# Get the value
 			val = float(row.pop())
