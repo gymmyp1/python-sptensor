@@ -301,10 +301,7 @@ class hash_t:
 				product.
 		Returns:
 			A numpy matrix with dimensions i_n x f
-        '''
-		# accumulation arrays
-		t = []
-		tind =[]
+		'''
 
 		# number of columns
 		fmax = u[0].shape[1]
@@ -314,8 +311,12 @@ class hash_t:
 
 		# go through each column
 		for f in range(fmax):
-			# go through every non-zero
+			# accumulation arrays
 			z=0
+			t=[]
+			tind=[]
+
+			# go through every non-zero
 			for bucket in self.table:
 				if bucket == None:
 					continue

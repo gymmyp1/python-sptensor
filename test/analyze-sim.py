@@ -1,8 +1,11 @@
 # This program analyzes the output from hashsim.py.
 import sys
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 import math
 import numpy as np
+from scipy import stats
+import seaborn as sns
 
 # load up the data
 data = []
@@ -35,19 +38,31 @@ colrate = collisions / entries * 100
 sum = 0
 count = 0
 max = 0
+
+nzcounts=[]
 # Average the # of non-zero xounts in the array / number of non-zeroes
 for i in range(len(counts)):
-    if counts[i] != 0:
-        sum = sum + counts[i]
-        count = count + 1
-        if counts[i] > max:
-            max = counts[i]
+	if counts[i] != 0:
+		sum = sum + counts[i]
+		count = count + 1
+		nzcounts.append(counts[i])
+		if counts[i] > max:
+			max = counts[i]
 
 avg = sum/count
+stdev = np.std(nzcounts)
+mode = stats.mode(nzcounts)
+median = np.median(nzcounts)
+
 print("avg probe depth: ", avg)
 print('max probe depth: ', max)
+print('standard deviation:', stdev)
+print('mode:', mode)
+print('median:', median)
 
-# Create heatmap styple plot
+sns.kdeplot(nzcounts)
+
+# Create heatmap style plot
 
 # Define numbers of generated data points and bins per axis.
 N_numbers = nbuckets
@@ -66,7 +81,12 @@ xy = np.reshape(counts, (floor,ceil))
 fig, ax = plt.subplots()
 
 #display the heatmap
-img = ax.imshow(xy, cmap='plasma', interpolation='nearest')
+#clist = [(0, '#000000'), (1/max, '#00ff00'), (0.5,'#c1dd21'), (1.0,'#ff0000')]
+clist = [(0, '#000000'), (1/max, '#ffffff'), (1.0,'#ff0000')]
+bucket_cmap = LinearSegmentedColormap.from_list('bucket_cmap', clist, N=max)
+img = ax.imshow(xy, cmap=bucket_cmap, interpolation='nearest')
+ax.set_xticks([])
+ax.set_yticks([])
 
 # Plot a colorbar with label.
 cb = plt.colorbar(img, ax=ax)
