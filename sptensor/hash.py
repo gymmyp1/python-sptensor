@@ -169,10 +169,15 @@ class hash_t:
 		if self.sy < 1:
 			self.sy = 1
 		self.sz = int(math.ceil(self.bits/2))
-		self.mask = ~(self.nbuckets-1)
+		self.mask = self.nbuckets-1
 		self.num_collisions=0
 		self.max_chain_depth=0
 		self.probe_time=0
+		
+		'''print('sx =', self.sx)
+		print('sy =', self.sy)
+		print('sz =', self.sz)
+		print('mask= ',self.mask)'''
 
 
 	def hash(self, m):
@@ -190,6 +195,12 @@ class hash_t:
 		hash ^= hash >> self.sy
 		hash += hash << self.sz
 		k = hash % self.nbuckets
+		
+		#print('hash << sx= ', hash)
+		#print('hash << sy= ', hash)
+		#print('hash << sz= ', hash)
+		#print("k=",k);
+		
 		return k
 
 
@@ -348,23 +359,16 @@ class hash_t:
 
 
 def read(file):
-	count=0
 	with open(file, 'r') as reader:
 		# Create the tensor
 		tns = hash_t()
-
-		x=0
+		
 		for row in reader:
-			#print(count)
-			count=count+1
-			#if count % 1000 == 0:
-				#print("Count: ", count, "Max Chain Depth:", tns.max_chain_depth)
 			row = row.split()
 			# Get the value
 			val = float(row.pop())
 			# The rest of the line is the indexes
 			idx = [int(i) for i in row]
-			x=x+1
 
 			tns.set(idx, val)
 
