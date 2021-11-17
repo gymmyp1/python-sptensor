@@ -169,7 +169,7 @@ class hash_t:
 		if self.sy < 1:
 			self.sy = 1
 		self.sz = int(math.ceil(self.bits/2))
-		self.mask = ~(self.nbuckets-1)
+		self.mask = self.nbuckets-1
 		self.num_collisions=0
 		self.max_chain_depth=0
 		self.probe_time=0
