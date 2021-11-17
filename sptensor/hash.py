@@ -288,62 +288,7 @@ class hash_t:
 		self.set(key, value)
 
 
-	def mttkrp(self, u, n):
-		'''
-		Carry out mttkrp between the tensor and an array of matrices,
-		unfolding the tensor along mode n.
-
-		Parameters:
-			u - A list of numpy matrices, these correspond to the modes
-				in the tensor, other than n. If i is the dimension in
-				mode x, then u[x] must be an i x f matrix.
-			n - The mode along which the tensor is unfolded for the
-				product.
-		Returns:
-			A numpy matrix with dimensions i_n x f
-		'''
-
-		# number of columns
-		fmax = u[0].shape[1]
-
-		# create the result array
-		m = np.zeros((self.modes[n], fmax))
-
-		# go through each column
-		for f in range(fmax):
-			# accumulation arrays
-			z=0
-			t=[]
-			tind=[]
-
-			# go through every non-zero
-			for bucket in self.table:
-				if bucket == None:
-					continue
-				for entry in bucket:
-					idx = mort.decode(entry[0], self.nmodes)
-					t.append(entry[1])
-					tind.append(idx[n])
-					z = len(t) -1
-
-					# multiply by the factor matrix entries
-					i=0
-					for b in u:
-						# skip the unfolded mode
-						if i==n:
-							i += 1
-							continue
-
-						# multiply the factor and advance to the next
-						t[z] *= b[idx[i], f]
-						i += 1
-			# end for
-			# accumulate m(:,f)
-			for z in range(len(t)):
-				m[tind[z],f] = m[tind[z], f] + t[z]
-			# end for
-		# end for
-		return m
+	
 
 
 
