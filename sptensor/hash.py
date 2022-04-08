@@ -58,30 +58,53 @@ class hash_t:
 				return self.v
 			else:
 				raise StopIteration
+    '''
 
-	class nnz_itr:
-		def __init__(self, hash_type):
-			self.hashtable = hash_type.hashtable
-			self.nbuckets = hash_type.hashtable.nbuckets
+	class nz_itr:
+		def __init__(self, t):
+			self.k = 0
+			self.i = -1
+			self.t = t
 
 		def __iter__(self):
-			self.a = self.hashtable.value[0]
-			self.i = 0
 			return self
 
 		def __next__(self):
-			if self.i < self.nbuckets:
-				#find the next non-zero value
-				while self.hashtable.value[self.i] == 0.0:
-					self.i += 1
-					if self.i == self.nbuckets-1:
-						raise StopIteration
+			# make sure we are in a chain with something
+			self.find_chain()
+			if self.k > len(self.t.table):
+				raise StopIteration
 
-				self.a = self.hashtable.value[self.i]
-				self.i += 1
-				return self.a
-			else:
-				raise StopIteration '''
+			# go to the next bucket
+			self.i += 1
+			if self.i >= len(self.t.table[self.k]):
+				self.k += 1
+				self.i = 0
+				self.find_chain()
+				# check to see if we are at the end
+				if self.k >= len(self.t.table):
+					raise StopIteration
+
+			# create the result tuple
+			#print("k: %d, i: %d, len(table)=%d, len(table[k])=%d, %s"%(self.k, self.i, len(self.t.table), len(self.t.table[self.k]), str(self.t.table[self.k])))
+			idx = mort.decode(self.t.table[self.k][self.i][0], self.t.nmodes)
+			value = self.t.table[self.k][self.i][1]
+			return (idx, value)
+
+
+		def find_chain(self):
+			nchains = len(self.t.table)
+			k = self.k
+			while k < nchains and (self.t.table[k] == None or len(self.t.table[k]) == 0):
+				k += 1
+			self.k = k
+
+
+	def nz(self):
+		"""
+		Return a non-zero iterator to this tensor.
+		"""
+		return iter(self.nz_itr(self))
 
 	#Function to insert an element in the hash table. Return the hash item if found, 0 if not found.
 	def set(self, i, v):
@@ -376,8 +399,5 @@ def read(file):
 	return tns
 
 def write(file, tns):
-	for bucket in tns.table:
-		if bucket == None:
-			continue
-		for item in bucket:
-			print(*mort.decode(item[0], tns.nmodes), item[1])
+	for idx, value in tns.nz():
+		print(*idx, value)
