@@ -59,6 +59,7 @@ print('max probe depth: ', max)
 print('standard deviation:', stdev)
 print('mode:', mode)
 print('median:', median)
+print('collision rate:', colrate)
 
 sns.kdeplot(nzcounts)
 

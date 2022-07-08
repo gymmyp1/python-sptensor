@@ -49,8 +49,9 @@ def crc(idx):
     s = [str(i) for i in idx]
     # Join list items using join()
     m = ''.join(s)
-    hash = int(binascii.crc32(m))
-    k = hash % nbuckets
+    text_bytes = bytes(m,'utf-8')
+    m = binascii.crc32(text_bytes)
+    k = int(m) % nbuckets
     return m, k
 
 def jenkinsMortonHash(idx):
@@ -88,5 +89,5 @@ with open(sys.argv[2], 'w') as file:
     print('Morton', 'Key', sep='\t', file=file)
     # run the test on every value
     for idx in indexes:
-        m, k = jenkinsMortonHash(idx)
+        m, k = crc(idx)
         print(m, k, sep='\t', file=file)
