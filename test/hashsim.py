@@ -2,6 +2,7 @@
 # This is inteneded to test the hash functions themseleves.
 import os, sys, getopt
 import math
+import binascii
 sys.path.append('../')
 
 from sptensor.morton import encode
@@ -30,7 +31,7 @@ exp = int(math.ceil(math.log2(reqSize)))
 nbuckets = max(128, 2**exp)
 bits = max(exp, 7)
 x = int(math.ceil(bits/8)) - 1
-y = 4*x - 1 
+y = 4*x - 1
 z = int(math.ceil(bits/2))
 
 def hash(idx):
@@ -43,8 +44,21 @@ def hash(idx):
 
     return m, k
 
+def crc(idx):
+    # Converting integer list to string list
+    s = [str(i) for i in idx]
+    # Join list items using join()
+    m = ''.join(s)
+    hash = int(binascii.crc32(m))
+    k = hash % nbuckets
+    return m, k
+
 def jenkinsMortonHash(idx):
-    m = encode(*idx)
+    #m = encode(*idx)
+    # Converting integer list to string list
+    s = [str(i) for i in idx]
+    # Join list items using join()
+    m = int("".join(s))
     hash = m
     hash += hash << x
     hash ^= hash >> y
