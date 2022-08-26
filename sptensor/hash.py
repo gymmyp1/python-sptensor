@@ -269,18 +269,18 @@ class hash_t:
 		# copy the relevant non-zeroes
 		for index in range(self.nbuckets):
 			#skip the not-present
-			if self.hashtable.flag[index] != 1:
+			if self.table.flag[index] != 1:
 				continue
 
 			# copy the things in our range
 			copy = True
-			idx = mort.decode(self.hashtable.morton[index], self.nmodes)
+			idx = mort.decode(self.table.morton[index], self.nmodes)
 			for i in range(len(idx)):
 				if idx[i] not in key[i]:
 					copy = False
 					break
 			if copy:
-				result.set(idx, self.hashtable.value[index])
+				result.set(idx, self.table.value[index])
 		return result
 
 
