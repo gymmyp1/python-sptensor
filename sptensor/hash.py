@@ -196,12 +196,6 @@ class hash_t:
 		self.num_collisions=0
 		self.max_chain_depth=0
 		self.probe_time=0
-		
-		'''print('sx =', self.sx)
-		print('sy =', self.sy)
-		print('sz =', self.sz)
-		print('mask= ',self.mask)'''
-
 
 	def hash(self, m):
 		"""
@@ -218,12 +212,12 @@ class hash_t:
 		hash ^= hash >> self.sy
 		hash += hash << self.sz
 		k = hash % self.nbuckets
-		
+
 		#print('hash << sx= ', hash)
 		#print('hash << sy= ', hash)
 		#print('hash << sz= ', hash)
 		#print("k=",k);
-		
+
 		return k
 
 
@@ -337,6 +331,8 @@ class hash_t:
 			A numpy matrix with dimensions i_n x f
 		'''
 
+		#import pdb; pdb.set_trace()
+
 		# number of columns
 		fmax = u[0].shape[1]
 
@@ -362,19 +358,26 @@ class hash_t:
 
 					# multiply by the factor matrix entries
 					i=0
-					for b in u:
+					for b in u: #for each matrix in u
 						# skip the unfolded mode
 						if i==n:
 							i += 1
 							continue
 
 						# multiply the factor and advance to the next
-						t[z] *= b[idx[i], f]
+						#breakpoint()
+						#print('idx[i]=',idx[i])
+						#print(b.shape)
+						#print(idx)
+						#print(self.modes)
+						#t[z] *= b[idx[i], f]
+						t[z] *= b[idx[i]-1, f]
 						i += 1
 			# end for
 			# accumulate m(:,f)
 			for z in range(len(t)):
-				m[tind[z],f] = m[tind[z], f] + t[z]
+				#m[tind[z],f] = m[tind[z], f] + t[z]
+				m[tind[z]-1,f] = m[tind[z]-1, f] + t[z]
 			# end for
 		# end for
 		return m
@@ -385,7 +388,7 @@ def read(file):
 	with open(file, 'r') as reader:
 		# Create the tensor
 		tns = hash_t()
-		
+
 		for row in reader:
 			row = row.split()
 			# Get the value
