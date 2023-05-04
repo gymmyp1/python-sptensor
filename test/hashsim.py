@@ -55,11 +55,8 @@ def crc(idx):
     return m, k
 
 def jenkinsMortonHash(idx):
-    #m = encode(*idx)
-    # Converting integer list to string list
-    s = [str(i) for i in idx]
-    # Join list items using join()
-    m = int("".join(s))
+    m = encode(*idx)
+
     hash = m
     hash += hash << x
     hash ^= hash >> y
@@ -80,7 +77,15 @@ def jenkinsHash(idx):
 
     return encode(*idx), hash%nbuckets
 
-
+def modJenkinsMortonHash(idx):
+    # Converting integer list to string list
+    m = sum(idx)
+    hash = m
+    hash += hash << x
+    hash ^= hash >> y
+    hash += hash << z
+    k = hash % nbuckets
+    return m, k
 
 with open(sys.argv[2], 'w') as file:
     # print out the information about our table
@@ -89,5 +94,5 @@ with open(sys.argv[2], 'w') as file:
     print('Morton', 'Key', sep='\t', file=file)
     # run the test on every value
     for idx in indexes:
-        m, k = crc(idx)
+        m, k = jenkinsMortonHash(idx)
         print(m, k, sep='\t', file=file)
